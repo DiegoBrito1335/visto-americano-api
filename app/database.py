@@ -4,27 +4,27 @@ from sqlalchemy.orm import sessionmaker
 import os
 from dotenv import load_dotenv
 
-# Carregar variáveis de ambiente
 load_dotenv()
 
-# URL do banco de dados (SQLite padrão, pode trocar depois)
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./visto_americano.db")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Criar engine (conexão com banco)
+# Render usa postgres:// mas SQLAlchemy precisa de postgresql://
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+# Se não tiver DATABASE_URL, usa SQLite local
+if not DATABASE_URL:
+    DATABASE_URL = "sqlite:///./visto_americano.db"
+
 engine = create_engine(
     DATABASE_URL,
     connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
 )
 
-# Criar SessionLocal (para usar em queries)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Base para os modelos
 Base = declarative_base()
 
-# Dependency para usar nas rotas (FastAPI)
 def get_db():
-    """Cria uma sessão do banco de dados que fecha automaticamente."""
     db = SessionLocal()
     try:
         yield db
