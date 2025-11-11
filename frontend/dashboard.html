@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Visto Americano</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    
+    <!-- Header -->
+    <header class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-2xl font-bold text-blue-900">🇺🇸 Visto Americano</h1>
+            </div>
+            <nav class="flex items-center space-x-4">
+                <a href="index.html" class="text-gray-600 hover:text-blue-600">Início</a>
+                <a href="simulador.html" class="text-gray-600 hover:text-blue-600">Simulador</a>
+                <a href="dashboard.html" class="text-blue-600 font-semibold">Dashboard</a>
+                <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm">
+                    Sair
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Loading -->
+    <div id="loading" class="flex items-center justify-center py-20">
+        <div class="text-center">
+            <svg class="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-gray-600">Carregando dashboard...</p>
+        </div>
+    </div>
+
+    <!-- Dashboard Container -->
+    <div id="dashboardContent" class="hidden max-w-7xl mx-auto px-4 py-8">
+        
+        <!-- Bem-vindo -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">
+                Olá, <span id="nomeUsuario"></span>! 👋
+            </h2>
+            <p class="text-gray-600">Bem-vindo ao seu painel de controle</p>
+        </div>
+
+        <!-- Cards de Estatísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            
+            <!-- Card: Plano -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-purple-100 rounded-full p-3">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                        </svg>
+                    </div>
+                    <span id="badgePlano" class="px-3 py-1 rounded-full text-xs font-bold"></span>
+                </div>
+                <h3 class="text-gray-500 text-sm font-medium mb-1">Seu Plano</h3>
+                <p id="tipoPlano" class="text-2xl font-bold text-gray-800"></p>
+                <p id="descricaoPlano" class="text-xs text-gray-500 mt-2"></p>
+            </div>
+
+            <!-- Card: Total de Tentativas -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-blue-100 rounded-full p-3">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                    </div>
+                </div>
+                <h3 class="text-gray-500 text-sm font-medium mb-1">Simulações</h3>
+                <p id="totalTentativas" class="text-2xl font-bold text-gray-800">0</p>
+                <p class="text-xs text-gray-500 mt-2">Total realizadas</p>
+            </div>
+
+            <!-- Card: Melhor Pontuação -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-green-100 rounded-full p-3">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <h3 class="text-gray-500 text-sm font-medium mb-1">Melhor Nota</h3>
+                <p id="melhorPontuacao" class="text-2xl font-bold text-gray-800">0</p>
+                <p class="text-xs text-gray-500 mt-2">Pontuação máxima</p>
+            </div>
+
+            <!-- Card: Média -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-yellow-100 rounded-full p-3">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                </div>
+                <h3 class="text-gray-500 text-sm font-medium mb-1">Média Geral</h3>
+                <p id="mediaPontuacao" class="text-2xl font-bold text-gray-800">0</p>
+                <p class="text-xs text-gray-500 mt-2">Pontuação média</p>
+            </div>
+
+        </div>
+
+        <!-- Grid Principal -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Coluna Esquerda (2/3) -->
+            <div class="lg:col-span-2 space-y-6">
+                
+                <!-- Gráfico de Evolução -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">📈 Evolução das Pontuações</h3>
+                    <div id="semGrafico" class="text-center py-12 text-gray-400">
+                        <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <p class="font-medium">Nenhuma simulação realizada ainda</p>
+                        <p class="text-sm mt-2">Faça sua primeira simulação para ver sua evolução</p>
+                        <a href="simulador.html" class="inline-block mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm">
+                            Iniciar Simulação
+                        </a>
+                    </div>
+                    <canvas id="graficoEvolucao" class="hidden"></canvas>
+                </div>
+
+                <!-- Última Tentativa -->
+                <div id="ultimaTentativaCard" class="hidden bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">🎯 Última Simulação</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Data</p>
+                            <p id="ultimaData" class="font-semibold text-gray-800"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Tipo</p>
+                            <p id="ultimaTipo" class="font-semibold text-gray-800"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Pontuação</p>
+                            <p id="ultimaPontuacao" class="text-2xl font-bold text-blue-600"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Probabilidade</p>
+                            <p id="ultimaProbabilidade" class="text-lg font-bold"></p>
+                        </div>
+                    </div>
+                    <a href="simulador.html" class="block mt-4 text-center bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg">
+                        Fazer Nova Simulação
+                    </a>
+                </div>
+
+            </div>
+
+            <!-- Coluna Direita (1/3) -->
+            <div class="space-y-6">
+                
+                <!-- Informações do Usuário -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">👤 Minha Conta</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-xs text-gray-500">Nome</p>
+                            <p id="nomeCompleto" class="font-medium text-gray-800"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Email</p>
+                            <p id="emailUsuario" class="font-medium text-gray-800 text-sm break-all"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Membro desde</p>
+                            <p id="dataCadastro" class="font-medium text-gray-800"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Perguntas Disponíveis</p>
+                            <p id="perguntasDisponiveis" class="text-xl font-bold text-blue-600"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card de Upgrade (apenas para gratuito) -->
+                <div id="cardUpgrade" class="hidden bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg p-6 text-white">
+                    <h3 class="text-xl font-bold mb-2">✨ Upgrade Premium</h3>
+                    <p class="text-sm mb-4 opacity-90">
+                        Tenha acesso completo a todas as 90 perguntas e análise detalhada!
+                    </p>
+                    <ul class="text-sm space-y-2 mb-4">
+                        <li class="flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            90 perguntas completas
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            Análise detalhada
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            Acesso vitalício
+                        </li>
+                    </ul>
+                    <a href="upgrade.html" class="block text-center bg-white text-purple-600 font-bold py-3 rounded-lg hover:bg-gray-100 transition">
+                        Assinar por R$ 79,90
+                    </a>
+                </div>
+
+                <!-- Ações Rápidas -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">⚡ Ações Rápidas</h3>
+                    <div class="space-y-3">
+                        <a href="simulador.html" class="block text-center bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg">
+                            🎯 Novo Simulador
+                        </a>
+                        <a href="#" onclick="verHistorico()" class="block text-center bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 rounded-lg">
+                            📊 Ver Histórico
+                        </a>
+                        <a href="index.html" class="block text-center bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 rounded-lg">
+                            🏠 Voltar ao Início
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        let chartEvolucao = null;
+
+        // Verificar autenticação
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        // Carregar dados do dashboard
+        async function carregarDashboard() {
+            try {
+                const response = await fetch(`${API_URL}/api/dashboard`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erro ao carregar dashboard');
+                }
+
+                const data = await response.json();
+                exibirDashboard(data);
+
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Erro ao carregar dashboard. Faça login novamente.');
+                window.location.href = 'login.html';
+            }
+        }
+
+        function exibirDashboard(data) {
+            // Ocultar loading
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('dashboardContent').classList.remove('hidden');
+
+            // Informações do usuário
+            document.getElementById('nomeUsuario').textContent = data.usuario.nome;
+            document.getElementById('nomeCompleto').textContent = data.usuario.nome;
+            document.getElementById('emailUsuario').textContent = data.usuario.email;
+            document.getElementById('dataCadastro').textContent = data.plano.data_cadastro;
+
+            // Plano
+            const isPremium = data.plano.premium;
+            document.getElementById('tipoPlano').textContent = isPremium ? 'Premium' : 'Gratuito';
+            document.getElementById('descricaoPlano').textContent = isPremium ? 'Acesso completo vitalício' : '25 perguntas de teste';
+            
+            const badgePlano = document.getElementById('badgePlano');
+            if (isPremium) {
+                badgePlano.textContent = '💎 PREMIUM';
+                badgePlano.className = 'px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700';
+            } else {
+                badgePlano.textContent = '🆓 GRÁTIS';
+                badgePlano.className = 'px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700';
+                document.getElementById('cardUpgrade').classList.remove('hidden');
+            }
+
+            // Estatísticas
+            document.getElementById('totalTentativas').textContent = data.estatisticas.total_tentativas;
+            document.getElementById('melhorPontuacao').textContent = data.estatisticas.melhor_pontuacao;
+            document.getElementById('mediaPontuacao').textContent = data.estatisticas.media_pontuacao;
+            document.getElementById('perguntasDisponiveis').textContent = data.estatisticas.perguntas_disponiveis;
+
+            // Última tentativa
+            if (data.ultima_tentativa) {
+                document.getElementById('ultimaTentativaCard').classList.remove('hidden');
+                document.getElementById('ultimaData').textContent = data.ultima_tentativa.data;
+                document.getElementById('ultimaTipo').textContent = data.ultima_tentativa.tipo === 'ds160' ? 'DS-160' : 'Entrevista';
+                document.getElementById('ultimaPontuacao').textContent = data.ultima_tentativa.pontuacao;
+                
+                const probabilidadeElement = document.getElementById('ultimaProbabilidade');
+                probabilidadeElement.textContent = data.ultima_tentativa.probabilidade;
+                
+                if (data.ultima_tentativa.probabilidade === 'Alta') {
+                    probabilidadeElement.className = 'text-lg font-bold text-green-600';
+                } else if (data.ultima_tentativa.probabilidade === 'Média') {
+                    probabilidadeElement.className = 'text-lg font-bold text-yellow-600';
+                } else {
+                    probabilidadeElement.className = 'text-lg font-bold text-red-600';
+                }
+            }
+
+            // Gráfico de evolução
+            if (data.evolucao && data.evolucao.length > 0) {
+                document.getElementById('semGrafico').classList.add('hidden');
+                document.getElementById('graficoEvolucao').classList.remove('hidden');
+                criarGraficoEvolucao(data.evolucao);
+            }
+        }
+
+        function criarGraficoEvolucao(evolucao) {
+            const ctx = document.getElementById('graficoEvolucao').getContext('2d');
+            
+            if (chartEvolucao) {
+                chartEvolucao.destroy();
+            }
+
+            chartEvolucao = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: evolucao.map(e => e.data),
+                    datasets: [{
+                        label: 'Pontuação',
+                        data: evolucao.map(e => e.pontuacao),
+                        borderColor: 'rgb(37, 99, 235)',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        }
+
+        function verHistorico() {
+            alert('Funcionalidade de histórico será implementada em breve!');
+        }
+
+        // Carregar ao iniciar
+        carregarDashboard();
+    </script>
+
+</body>
+</html>

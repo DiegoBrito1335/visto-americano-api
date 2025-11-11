@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redefinir Senha - Visto Americano</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    
+    <!-- Container Principal -->
+    <div class="min-h-screen flex items-center justify-center px-4 py-12">
+        <div class="max-w-md w-full">
+            
+            <!-- Logo/Título -->
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold text-blue-900 mb-2">🇺🇸 Visto Americano</h1>
+                <p class="text-gray-600">Redefinir Senha</p>
+            </div>
+
+            <!-- Card de Redefinição -->
+            <div class="bg-white rounded-2xl shadow-xl p-8">
+                
+                <!-- Ícone -->
+                <div class="text-center mb-6">
+                    <div class="inline-block bg-green-100 rounded-full p-4">
+                        <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <h2 class="text-2xl font-bold text-center text-gray-800 mb-2">Nova Senha</h2>
+                <p class="text-center text-gray-600 mb-6" id="emailUsuario">
+                    Crie uma nova senha para sua conta
+                </p>
+
+                <!-- Loading de Validação -->
+                <div id="loadingValidacao" class="text-center py-8">
+                    <svg class="animate-spin h-10 w-10 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="text-gray-600 mt-4">Validando link...</p>
+                </div>
+
+                <!-- Erro de Token -->
+                <div id="erroToken" class="hidden">
+                    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                        <p class="text-sm font-medium">❌ Link inválido ou expirado</p>
+                        <p class="text-xs mt-1">Solicite um novo link de recuperação.</p>
+                    </div>
+                    <a href="esqueci-senha.html" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200">
+                        Solicitar Novo Link
+                    </a>
+                </div>
+
+                <!-- Formulário -->
+                <form id="formRedefinir" class="space-y-6 hidden">
+                    
+                    <!-- Nova Senha -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Nova Senha
+                        </label>
+                        <input 
+                            type="password" 
+                            id="novaSenha" 
+                            required
+                            minlength="6"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Mínimo 6 caracteres"
+                        >
+                        <p class="text-xs text-gray-500 mt-1">A senha deve ter no mínimo 6 caracteres</p>
+                    </div>
+
+                    <!-- Confirmar Senha -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Confirmar Nova Senha
+                        </label>
+                        <input 
+                            type="password" 
+                            id="confirmarSenha" 
+                            required
+                            minlength="6"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Digite a senha novamente"
+                        >
+                    </div>
+
+                    <!-- Mensagem de Erro -->
+                    <div id="mensagemErro" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                        <p class="text-sm"></p>
+                    </div>
+
+                    <!-- Mensagem de Sucesso -->
+                    <div id="mensagemSucesso" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+                        <p class="text-sm font-medium">✅ Senha alterada com sucesso!</p>
+                        <p class="text-xs mt-1">Redirecionando para o login...</p>
+                    </div>
+
+                    <!-- Botão Redefinir -->
+                    <button 
+                        type="submit" 
+                        id="btnRedefinir"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center"
+                    >
+                        <span id="textoBtn">Redefinir Senha</span>
+                        <span id="loadingBtn" class="hidden">
+                            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
+                    </button>
+
+                </form>
+
+                <!-- Link para Login -->
+                <div class="mt-6 text-center hidden" id="linkLogin">
+                    <p class="text-sm text-gray-600">
+                        <a href="login.html" class="text-blue-600 hover:text-blue-800 font-medium">Voltar para o login</a>
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        let tokenRecuperacao = '';
+
+        // Pegar token da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        tokenRecuperacao = urlParams.get('token');
+
+        // Validar token ao carregar a página
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (!tokenRecuperacao) {
+                mostrarErroToken();
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/recuperar-senha/validar-token?token=${encodeURIComponent(tokenRecuperacao)}`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.valido) {
+                    // Token válido - mostrar formulário
+                    document.getElementById('loadingValidacao').classList.add('hidden');
+                    document.getElementById('formRedefinir').classList.remove('hidden');
+                    document.getElementById('linkLogin').classList.remove('hidden');
+                    document.getElementById('emailUsuario').textContent = `Para: ${data.email}`;
+                } else {
+                    mostrarErroToken();
+                }
+
+            } catch (error) {
+                mostrarErroToken();
+            }
+        });
+
+        function mostrarErroToken() {
+            document.getElementById('loadingValidacao').classList.add('hidden');
+            document.getElementById('erroToken').classList.remove('hidden');
+        }
+
+        // Formulário de redefinição
+        document.getElementById('formRedefinir').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const novaSenha = document.getElementById('novaSenha').value;
+            const confirmarSenha = document.getElementById('confirmarSenha').value;
+            const btnRedefinir = document.getElementById('btnRedefinir');
+            const textoBtn = document.getElementById('textoBtn');
+            const loadingBtn = document.getElementById('loadingBtn');
+            const mensagemErro = document.getElementById('mensagemErro');
+            const mensagemSucesso = document.getElementById('mensagemSucesso');
+
+            // Ocultar mensagens
+            mensagemErro.classList.add('hidden');
+            mensagemSucesso.classList.add('hidden');
+
+            // Validar senhas
+            if (novaSenha !== confirmarSenha) {
+                mensagemErro.classList.remove('hidden');
+                mensagemErro.querySelector('p').textContent = 'As senhas não coincidem';
+                return;
+            }
+
+            if (novaSenha.length < 6) {
+                mensagemErro.classList.remove('hidden');
+                mensagemErro.querySelector('p').textContent = 'A senha deve ter no mínimo 6 caracteres';
+                return;
+            }
+
+            // Mostrar loading
+            btnRedefinir.disabled = true;
+            textoBtn.classList.add('hidden');
+            loadingBtn.classList.remove('hidden');
+
+            try {
+                const response = await fetch(`${API_URL}/api/recuperar-senha/resetar?token=${encodeURIComponent(tokenRecuperacao)}&nova_senha=${encodeURIComponent(novaSenha)}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Mostrar mensagem de sucesso
+                    mensagemSucesso.classList.remove('hidden');
+
+                    // Redirecionar para login após 2 segundos
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
+
+                } else {
+                    throw new Error(data.detail || 'Erro ao redefinir senha');
+                }
+
+            } catch (error) {
+                mensagemErro.classList.remove('hidden');
+                mensagemErro.querySelector('p').textContent = error.message;
+                
+                // Remover loading
+                btnRedefinir.disabled = false;
+                textoBtn.classList.remove('hidden');
+                loadingBtn.classList.add('hidden');
+            }
+        });
+    </script>
+
+</body>
+</html>

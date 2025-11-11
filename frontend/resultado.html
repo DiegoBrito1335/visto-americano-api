@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seu Resultado - Visto Americano</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        }
+        .fade-in {
+            animation: fadeIn 0.6s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pulse-success {
+            animation: pulseSuccess 2s infinite;
+        }
+        @keyframes pulseSuccess {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.7); }
+            50% { box-shadow: 0 0 0 20px rgba(5, 150, 105, 0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50" x-data="resultadoApp()" x-init="init()">
+    
+    <!-- Header -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center cursor-pointer" onclick="location.href='index.html'">
+                    <i class="fas fa-passport text-blue-600 text-3xl mr-3"></i>
+                    <span class="text-xl font-bold text-gray-900">Visto Americano</span>
+                </div>
+                <div>
+                    <button onclick="location.href='index.html'" class="text-gray-600 hover:text-blue-600 transition">
+                        <i class="fas fa-home mr-2"></i>
+                        Início
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Loading State -->
+    <div x-show="loading" class="max-w-4xl mx-auto px-4 py-20 text-center">
+        <div class="inline-block animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mb-4"></div>
+        <p class="text-gray-600 text-lg">Carregando resultados...</p>
+    </div>
+
+    <!-- No Data State -->
+    <div x-show="!loading && !resultado" class="max-w-4xl mx-auto px-4 py-20">
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-8 text-center">
+            <i class="fas fa-exclamation-triangle text-yellow-600 text-5xl mb-4"></i>
+            <h2 class="text-2xl font-bold text-yellow-900 mb-2">Nenhum resultado encontrado</h2>
+            <p class="text-yellow-700 mb-6">Faça uma simulação primeiro para ver seus resultados.</p>
+            <button onclick="location.href='simulador.html'" class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition font-bold">
+                <i class="fas fa-play-circle mr-2"></i>
+                Iniciar Simulação
+            </button>
+        </div>
+    </div>
+
+    <!-- Results Content -->
+    <div x-show="!loading && resultado" class="max-w-7xl mx-auto px-4 py-8 fade-in">
+        
+        <!-- Hero Result Card -->
+        <div class="gradient-bg rounded-2xl shadow-2xl p-8 md:p-12 text-white mb-8 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold mb-6">Análise Completa</h1>
+            
+            <!-- Score Circle -->
+            <div class="mb-8">
+                <div class="inline-block relative">
+                    <svg class="transform -rotate-90" width="200" height="200">
+                        <circle cx="100" cy="100" r="90" stroke="rgba(255,255,255,0.2)" stroke-width="12" fill="none"/>
+                        <circle cx="100" cy="100" r="90" 
+                                :stroke="corPontuacao" 
+                                stroke-width="12" 
+                                fill="none"
+                                stroke-linecap="round"
+                                :stroke-dasharray="565.48"
+                                :stroke-dashoffset="565.48 - (565.48 * (resultado?.pontuacao_geral || 0) / 100)"
+                                style="transition: stroke-dashoffset 1s ease;"/>
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <div class="text-6xl font-black" x-text="Math.round(resultado?.pontuacao_geral || 0)"></div>
+                        <div class="text-xl font-medium opacity-90">de 100</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Probability Badge -->
+            <div class="mb-6">
+                <div class="inline-block px-8 py-4 rounded-full text-2xl font-bold"
+                     :class="classeProbabilidade">
+                    <i :class="iconeProbabilidade" class="mr-2"></i>
+                    <span x-text="'Probabilidade ' + (resultado?.probabilidade || 'Média')"></span>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+                <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                    <div class="text-3xl font-bold" x-text="resultado?.total_perguntas || 0"></div>
+                    <div class="text-sm opacity-90">Perguntas</div>
+                </div>
+                <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                    <div class="text-3xl font-bold" x-text="tempoGasto"></div>
+                    <div class="text-sm opacity-90">Tempo</div>
+                </div>
+                <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                    <div class="text-3xl font-bold" x-text="(resultado?.pontos_fortes || []).length"></div>
+                    <div class="text-sm opacity-90">Fortes</div>
+                </div>
+                <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                    <div class="text-3xl font-bold" x-text="(resultado?.pontos_fracos || []).length"></div>
+                    <div class="text-sm opacity-90">Fracos</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="grid lg:grid-cols-2 gap-8 mb-8">
+            
+            <!-- Radar Chart -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-chart-radar text-blue-600 mr-2"></i>
+                    Análise por Categoria
+                </h2>
+                <div class="relative h-80">
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Points Strong/Weak -->
+            <div class="space-y-6">
+                <!-- Pontos Fortes -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-thumbs-up text-green-600 mr-2"></i>
+                        Pontos Fortes
+                    </h2>
+                    <div class="space-y-3">
+                        <template x-for="(ponto, index) in resultado?.pontos_fortes || []" :key="index">
+                            <div class="flex items-start p-3 bg-green-50 rounded-lg border border-green-200">
+                                <i class="fas fa-check-circle text-green-600 mt-1 mr-3"></i>
+                                <span class="text-gray-900 font-medium" x-text="ponto"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Pontos Fracos -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-exclamation-triangle text-amber-600 mr-2"></i>
+                        Pontos de Atenção
+                    </h2>
+                    <div class="space-y-3">
+                        <template x-for="(ponto, index) in resultado?.pontos_fracos || []" :key="index">
+                            <div class="flex items-start p-3 bg-amber-50 rounded-lg border border-amber-200">
+                                <i class="fas fa-exclamation-circle text-amber-600 mt-1 mr-3"></i>
+                                <span class="text-gray-900 font-medium" x-text="ponto"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">
+                <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>
+                Recomendações Personalizadas
+            </h2>
+            <div class="space-y-4">
+                <template x-for="(rec, index) in resultado?.recomendacoes || []" :key="index">
+                    <div class="flex items-start p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div class="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold mr-4">
+                            <span x-text="index + 1"></span>
+                        </div>
+                        <p class="text-gray-900 leading-relaxed" x-text="rec"></p>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- CTA Cards -->
+        <div class="grid md:grid-cols-3 gap-6 mb-8">
+            <!-- Nova Tentativa -->
+            <div class="bg-white rounded-xl shadow-lg p-8 text-center">
+                <i class="fas fa-redo text-blue-600 text-5xl mb-4"></i>
+                <h3 class="text-2xl font-bold text-gray-900 mb-3">Fazer Nova Simulação</h3>
+                <p class="text-gray-600 mb-6">Teste novamente com respostas diferentes e veja como melhorar sua pontuação.</p>
+                <button onclick="location.href='simulador.html'" class="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-bold">
+                    Nova Simulação
+                </button>
+            </div>
+
+            <!-- Upgrade Premium -->
+
+            <!-- Exportar PDF -->
+            <div class="bg-white rounded-xl shadow-lg p-8 text-center">
+                <i class="fas fa-file-pdf text-red-600 text-5xl mb-4"></i>
+                <h3 class="text-2xl font-bold text-gray-900 mb-3">Exportar Resultado</h3>
+                <p class="text-gray-600 mb-6">Baixe seu resultado completo em PDF para salvar ou imprimir.</p>
+                <button onclick="exportarPDF()" class="w-full bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition font-bold">
+                    <i class="fas fa-download mr-2"></i>
+                    Baixar PDF
+                </button>
+            </div>
+            <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg p-8 text-center text-white">
+                <i class="fas fa-crown text-yellow-400 text-5xl mb-4"></i>
+                <h3 class="text-2xl font-bold mb-3">Upgrade para Premium</h3>
+                <p class="text-blue-100 mb-6">Acesse todas as 90 perguntas, análise detalhada com IA e recomendações avançadas.</p>
+                <button onclick="location.href='index.html#planos'" class="w-full bg-white text-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 transition font-bold">
+                    Ver Planos
+                </button>
+            </div>
+        </div>
+
+        <!-- Detailed Scores -->
+        <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">
+                <i class="fas fa-list-check text-blue-600 mr-2"></i>
+                Pontuação Detalhada por Categoria
+            </h2>
+            <div class="space-y-4">
+                <template x-for="[categoria, pontos] in Object.entries(resultado?.pontuacao_categorias || {})" :key="categoria">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-semibold text-gray-900 capitalize" x-text="categoria.replace(/_/g, ' ')"></span>
+                            <span class="font-bold text-blue-600" x-text="Math.round(pontos) + ' pts'"></span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                            <div class="h-3 rounded-full transition-all duration-1000"
+                                 :style="'width: ' + Math.min(100, pontos) + '%'"
+                                 :class="pontos >= 70 ? 'bg-green-500' : pontos >= 40 ? 'bg-yellow-500' : 'bg-red-500'">
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function resultadoApp() {
+            return {
+                loading: true,
+                resultado: null,
+                tempoGasto: '0:00',
+                isPremium: false,
+                radarChart: null,
+                
+                get corPontuacao() {
+                    const pontuacao = this.resultado?.pontuacao_geral || 0;
+                    if (pontuacao >= 70) return '#10b981';
+                    if (pontuacao >= 50) return '#f59e0b';
+                    return '#ef4444';
+                },
+                
+                get classeProbabilidade() {
+                    const prob = this.resultado?.probabilidade;
+                    if (prob === 'Alta') return 'bg-green-500 text-white pulse-success';
+                    if (prob === 'Média') return 'bg-yellow-500 text-white';
+                    return 'bg-red-500 text-white';
+                },
+                
+                get iconeProbabilidade() {
+                    const prob = this.resultado?.probabilidade;
+                    if (prob === 'Alta') return 'fas fa-check-circle';
+                    if (prob === 'Média') return 'fas fa-exclamation-circle';
+                    return 'fas fa-times-circle';
+                },
+                
+                init() {
+                    try {
+                        const resultadoStr = localStorage.getItem('resultadoVisto');
+                        const tempoStr = localStorage.getItem('tempoVisto');
+                        
+                        if (resultadoStr) {
+                            this.resultado = JSON.parse(resultadoStr);
+                            this.tempoGasto = tempoStr || '0:00';
+                            this.loading = false;
+                            
+                            setTimeout(() => this.criarGraficoRadar(), 200);
+                        } else {
+                            this.loading = false;
+                        }
+                    } catch (error) {
+                        console.error('Erro ao carregar resultados:', error);
+                        this.loading = false;
+                    }
+                },
+                
+                criarGraficoRadar() {
+                    const ctx = document.getElementById('radarChart');
+                    
+                    if (!ctx) {
+                        console.error('Canvas radarChart não encontrado');
+                        return;
+                    }
+                    
+                    if (!this.resultado || !this.resultado.pontuacao_categorias) {
+                        console.warn('Sem dados para o gráfico');
+                        return;
+                    }
+                    
+                    const categorias = this.resultado.pontuacao_categorias;
+                    
+                    if (Object.keys(categorias).length === 0) {
+                        console.warn('Categorias vazias');
+                        return;
+                    }
+                    
+                    const labels = Object.keys(categorias).map(k => 
+                        k.replace(/_/g, ' ').split(' ').map(w => 
+                            w.charAt(0).toUpperCase() + w.slice(1)
+                        ).join(' ')
+                    );
+                    
+                    const data = Object.values(categorias);
+                    
+                    if (this.radarChart) {
+                        this.radarChart.destroy();
+                    }
+                    
+                    try {
+                        this.radarChart = new Chart(ctx, {
+                            type: 'radar',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: 'Sua Pontuação',
+                                    data: data,
+                                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                                    borderColor: 'rgba(59, 130, 246, 1)',
+                                    borderWidth: 2,
+                                    pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                                    pointBorderColor: '#fff',
+                                    pointHoverBackgroundColor: '#fff',
+                                    pointHoverBorderColor: 'rgba(59, 130, 246, 1)',
+                                    pointRadius: 4,
+                                    pointHoverRadius: 6
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    r: {
+                                        beginAtZero: true,
+                                        max: 100,
+                                        ticks: {
+                                            stepSize: 20,
+                                            font: {
+                                                size: 12
+                                            }
+                                        },
+                                        pointLabels: {
+                                            font: {
+                                                size: 13,
+                                                weight: 'bold'
+                                            }
+                                        }
+                                    }
+                                },
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function(context) {
+                                                return 'Pontuação: ' + Math.round(context.raw) + ' pts';
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                        
+                        console.log('Gráfico criado com sucesso!');
+                    } catch (error) {
+                        console.error('Erro ao criar gráfico:', error);
+                    }
+                }
+            }
+        }
+
+        // Função para exportar PDF
+        async function exportarPDF() {
+            const API_URL = 'http://localhost:8000';
+            const token = localStorage.getItem('token');
+            
+            try {
+                // Pegar ID da tentativa dos dados carregados
+                const tentativaId = window.resultadoApp?.resultado?.tentativa_id;
+                
+                if (!tentativaId) {
+                    alert('ID da tentativa não encontrado. Complete uma simulação primeiro.');
+                    return;
+                }
+                
+                // Mostrar loading
+                const btnText = event.target.innerHTML;
+                event.target.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Gerando PDF...';
+                event.target.disabled = true;
+                
+                // Fazer requisição
+                const response = await fetch(`${API_URL}/api/resultado/${tentativaId}/pdf`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Erro ao gerar PDF');
+                }
+                
+                // Baixar PDF
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `resultado_visto_${tentativaId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                // Mostrar sucesso
+                event.target.innerHTML = '<i class="fas fa-check mr-2"></i>PDF Baixado!';
+                setTimeout(() => {
+                    event.target.innerHTML = btnText;
+                    event.target.disabled = false;
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Erro ao exportar PDF:', error);
+                alert('Erro ao gerar PDF. Verifique se completou a simulação e tente novamente.');
+                event.target.innerHTML = btnText;
+                event.target.disabled = false;
+            }
+        }
+    </script>
+
+</body>
+</html>

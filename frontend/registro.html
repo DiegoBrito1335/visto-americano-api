@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Conta - Visto Americano</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center">
+    
+    <div class="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full mx-4">
+        <h1 class="text-3xl font-bold text-center mb-2">🛂 Criar Conta</h1>
+        <p class="text-center text-gray-600 mb-8">Comece sua preparação para o visto americano</p>
+        
+        <form id="registroForm" class="space-y-6">
+            <div>
+                <label class="block text-sm font-semibold mb-2">Nome Completo</label>
+                <input type="text" id="nome" required
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                       placeholder="João da Silva">
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold mb-2">Email</label>
+                <input type="email" id="email" required
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                       placeholder="seu@email.com">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold mb-2">Senha</label>
+                <input type="password" id="senha" required minlength="6"
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                       placeholder="Mínimo 6 caracteres">
+                <p class="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold mb-2">Confirmar Senha</label>
+                <input type="password" id="confirmarSenha" required
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                       placeholder="Digite a senha novamente">
+            </div>
+            
+            <button type="submit" 
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition">
+                Criar Conta
+            </button>
+        </form>
+        
+        <div id="mensagem" class="mt-4 text-center text-sm"></div>
+
+        <div class="mt-6 text-center border-t pt-6">
+            <p class="text-sm text-gray-600">
+                Já tem uma conta?
+                <a href="login.html" class="text-blue-600 hover:underline font-semibold">
+                    Fazer Login
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+
+        document.getElementById('registroForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const nome = document.getElementById('nome').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const senha = document.getElementById('senha').value;
+            const confirmarSenha = document.getElementById('confirmarSenha').value;
+            const mensagem = document.getElementById('mensagem');
+            
+            // Validações
+            if (senha !== confirmarSenha) {
+                mensagem.innerHTML = '<span class="text-red-600">❌ As senhas não coincidem</span>';
+                return;
+            }
+
+            if (senha.length < 6) {
+                mensagem.innerHTML = '<span class="text-red-600">❌ A senha deve ter no mínimo 6 caracteres</span>';
+                return;
+            }
+
+            if (!nome || nome.length < 3) {
+                mensagem.innerHTML = '<span class="text-red-600">❌ Digite seu nome completo</span>';
+                return;
+            }
+            
+            try {
+                mensagem.innerHTML = '<span class="text-blue-600">⏳ Criando conta...</span>';
+
+                const response = await fetch(`${API_URL}/api/registrar`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        nome_completo: nome,
+                        senha: senha
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    mensagem.innerHTML = '<span class="text-green-600">✅ Conta criada! Redirecionando para login...</span>';
+                    
+                    // Redirecionar para login após 2 segundos
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
+                } else {
+                    // Tratar erros específicos
+                    if (response.status === 400) {
+                        mensagem.innerHTML = '<span class="text-red-600">❌ Este email já está cadastrado</span>';
+                    } else {
+                        mensagem.innerHTML = `<span class="text-red-600">❌ ${data.detail || 'Erro ao criar conta'}</span>`;
+                    }
+                }
+            } catch (error) {
+                mensagem.innerHTML = '<span class="text-red-600">❌ Erro ao conectar com o servidor</span>';
+                console.error(error);
+            }
+        });
+
+        // Validação em tempo real das senhas
+        document.getElementById('confirmarSenha').addEventListener('input', function() {
+            const senha = document.getElementById('senha').value;
+            const confirmarSenha = this.value;
+            const mensagem = document.getElementById('mensagem');
+            
+            if (confirmarSenha && senha !== confirmarSenha) {
+                mensagem.innerHTML = '<span class="text-orange-600">⚠️ As senhas não coincidem</span>';
+            } else if (confirmarSenha && senha === confirmarSenha) {
+                mensagem.innerHTML = '<span class="text-green-600">✅ As senhas coincidem</span>';
+            } else {
+                mensagem.innerHTML = '';
+            }
+        });
+    </script>
+</body>
+</html>

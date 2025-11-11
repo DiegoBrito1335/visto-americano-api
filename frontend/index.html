@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visto Americano - Prepare-se para Aprovação</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    
+    <!-- Header/Navbar -->
+    <nav class="bg-white shadow-sm fixed w-full top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-passport text-blue-600 text-3xl mr-3"></i>
+                    <span class="text-xl font-bold text-gray-900">Visto Americano</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#como-funciona" class="text-gray-600 hover:text-blue-600 transition">Como Funciona</a>
+                    <a href="#planos" class="text-gray-600 hover:text-blue-600 transition">Planos</a>
+                    <a href="#faq" class="text-gray-600 hover:text-blue-600 transition">FAQ</a>
+                    <a href="dashboard.html" id="linkDashboard" class="hidden text-gray-600 hover:text-blue-600 transition">
+                        <i class="fas fa-chart-line mr-1"></i>Dashboard
+                    </a>
+                    <a href="historico.html" id="linkHistorico" class="hidden text-gray-600 hover:text-blue-600 transition">
+                        <i class="fas fa-history mr-1"></i>Histórico
+                    </a>
+                </div>
+                
+                <!-- ⭐ NOVO: Botões de Auth e Badge de Plano -->
+                <div class="flex items-center space-x-4">
+                    <!-- Badge de plano (aparece quando logado) -->
+                    <div id="userPlanBadge" class="hidden"></div>
+                    
+                    <!-- Botões de autenticação -->
+                    <div id="authButtons">
+                        <a href="login.html" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition">
+                            Entrar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="gradient-bg pt-32 pb-20 px-4">
+        <div class="max-w-7xl mx-auto text-center">
+            <div class="mb-6">
+                <span class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-semibold pulse-animation inline-block">
+                    ✨ Baseado em 1.000+ entrevistas reais
+                </span>
+            </div>
+            <h1 class="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
+                Prepare-se para a<br>
+                <span class="text-blue-200">Entrevista do Visto Americano</span>
+            </h1>
+            <p class="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+                Simule o formulário DS-160 e a entrevista na embaixada. Receba uma análise completa da sua probabilidade de aprovação.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <button onclick="location.href='simulador.html'" class="bg-white text-blue-600 px-8 py-4 rounded-lg hover:bg-blue-50 transition font-bold text-lg shadow-xl">
+                    <i class="fas fa-play-circle mr-2"></i>
+                    Iniciar Simulação Grátis
+                </button>
+                <button onclick="document.getElementById('como-funciona').scrollIntoView({behavior: 'smooth'})" class="bg-transparent border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-blue-600 transition font-bold text-lg">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Saiba Mais
+                </button>
+            </div>
+            
+            <!-- Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16 max-w-4xl mx-auto">
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-white mb-2">90+</div>
+                    <div class="text-blue-100">Perguntas Reais</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-white mb-2">95%</div>
+                    <div class="text-blue-100">Precisão</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-white mb-2">5 min</div>
+                    <div class="text-blue-100">Resultado Rápido</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-white mb-2">24/7</div>
+                    <div class="text-blue-100">Disponível</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Como Funciona -->
+    <section id="como-funciona" class="py-20 px-4 bg-white">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Como Funciona</h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                    Três passos simples para descobrir sua probabilidade de aprovação
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="card-hover bg-white rounded-xl p-8 border-2 border-gray-100">
+                    <div class="w-16 h-16 gradient-bg rounded-full flex items-center justify-center text-white text-2xl font-bold mb-6">
+                        1
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-file-alt text-blue-600 mr-2"></i>
+                        Preencha o DS-160
+                    </h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Responda perguntas do formulário oficial DS-160. São as mesmas perguntas que você encontrará no site do governo americano.
+                    </p>
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="card-hover bg-white rounded-xl p-8 border-2 border-gray-100">
+                    <div class="w-16 h-16 gradient-bg rounded-full flex items-center justify-center text-white text-2xl font-bold mb-6">
+                        2
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-comments text-blue-600 mr-2"></i>
+                        Simule a Entrevista
+                    </h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Pratique com as perguntas REAIS feitas pelos oficiais consulares durante a entrevista na embaixada americana.
+                    </p>
+                </div>
+                
+                <!-- Step 3 -->
+                <div class="card-hover bg-white rounded-xl p-8 border-2 border-gray-100">
+                    <div class="w-16 h-16 gradient-bg rounded-full flex items-center justify-center text-white text-2xl font-bold mb-6">
+                        3
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+                        Receba Análise Detalhada
+                    </h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Veja sua pontuação por categoria, probabilidade de aprovação e recomendações personalizadas para melhorar seu perfil.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Planos e Preços -->
+    <section id="planos" class="py-20 px-4 bg-gray-50">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Escolha Seu Plano</h2>
+                <p class="text-xl text-gray-600">
+                    Comece grátis ou tenha acesso completo com Premium
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                <!-- Plano Gratuito -->
+                <div class="bg-white rounded-2xl p-8 shadow-lg border-2 border-gray-200">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Gratuito</h3>
+                        <div class="text-5xl font-bold text-gray-900 mb-2">R$ 0</div>
+                        <p class="text-gray-600">Para experimentar</p>
+                    </div>
+                    
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-green-600 mt-1 mr-3"></i>
+                            <span class="text-gray-700">10 perguntas de teste</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-green-600 mt-1 mr-3"></i>
+                            <span class="text-gray-700">Análise básica</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-green-600 mt-1 mr-3"></i>
+                            <span class="text-gray-700">Pontuação geral</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-times text-red-400 mt-1 mr-3"></i>
+                            <span class="text-gray-400">90 perguntas completas</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-times text-red-400 mt-1 mr-3"></i>
+                            <span class="text-gray-400">Análise detalhada</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-times text-red-400 mt-1 mr-3"></i>
+                            <span class="text-gray-400">Exportar PDF</span>
+                        </li>
+                    </ul>
+                    
+                    <button onclick="location.href='simulador.html'" class="w-full bg-gray-200 text-gray-900 px-8 py-4 rounded-lg hover:bg-gray-300 transition font-bold">
+                        Começar Grátis
+                    </button>
+                </div>
+                
+                <!-- Plano Premium -->
+                <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-8 text-white relative overflow-hidden shadow-2xl transform hover:scale-105 transition">
+                    <div class="absolute top-0 right-0 bg-yellow-400 text-gray-900 px-4 py-1 text-sm font-bold rounded-bl-lg">
+                        RECOMENDADO
+                    </div>
+                    
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold mb-2">Premium</h3>
+                        <div class="text-5xl font-bold mb-2">R$ 79,90</div>
+                        <p class="text-blue-100">Pagamento único • Acesso vitalício</p>
+                    </div>
+                    
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-yellow-400 mt-1 mr-3"></i>
+                            <span>✅ 90 perguntas completas</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-yellow-400 mt-1 mr-3"></i>
+                            <span>✅ Análise detalhada por categoria</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-yellow-400 mt-1 mr-3"></i>
+                            <span>✅ Gráfico radar de performance</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-yellow-400 mt-1 mr-3"></i>
+                            <span>✅ Recomendações personalizadas</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-yellow-400 mt-1 mr-3"></i>
+                            <span>📄 Exportar resultado em PDF</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-yellow-400 mt-1 mr-3"></i>
+                            <span>📧 Receber análise por email</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-yellow-400 mt-1 mr-3"></i>
+                            <span>📊 Histórico de tentativas</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-yellow-400 mt-1 mr-3"></i>
+                            <span>🔄 Refazer ilimitado</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-yellow-400 mt-1 mr-3"></i>
+                            <span>💬 Suporte prioritário</span>
+                        </li>
+                    </ul>
+                    
+                    <button onclick="location.href='upgrade.html'" class="w-full bg-white text-blue-600 px-8 py-4 rounded-lg hover:bg-blue-50 transition font-bold">
+                        🚀 Quero Ser Premium
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="py-20 px-4 bg-white">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Perguntas Frequentes</h2>
+            </div>
+            
+            <div class="space-y-4">
+                <details class="bg-gray-50 rounded-lg p-6 shadow-sm">
+                    <summary class="font-bold text-lg text-gray-900 cursor-pointer">
+                        As perguntas são realmente as mesmas da entrevista?
+                    </summary>
+                    <p class="mt-4 text-gray-600">
+                        Sim! Nossas perguntas são baseadas em relatos reais de brasileiros que passaram pela entrevista. Coletamos mais de 1.000 experiências para garantir autenticidade.
+                    </p>
+                </details>
+                
+                <details class="bg-gray-50 rounded-lg p-6 shadow-sm">
+                    <summary class="font-bold text-lg text-gray-900 cursor-pointer">
+                        A análise garante aprovação do visto?
+                    </summary>
+                    <p class="mt-4 text-gray-600">
+                        Não. Nenhuma ferramenta pode garantir aprovação, pois a decisão final é do oficial consular. Nossa plataforma te prepara e aumenta suas chances mostrando pontos fortes e fracos.
+                    </p>
+                </details>
+                
+                <details class="bg-gray-50 rounded-lg p-6 shadow-sm">
+                    <summary class="font-bold text-lg text-gray-900 cursor-pointer">
+                        Meus dados são seguros?
+                    </summary>
+                    <p class="mt-4 text-gray-600">
+                        Sim! Não compartilhamos suas informações com terceiros. Todos os dados são criptografados e armazenados com segurança.
+                    </p>
+                </details>
+                
+                <details class="bg-gray-50 rounded-lg p-6 shadow-sm">
+                    <summary class="font-bold text-lg text-gray-900 cursor-pointer">
+                        Posso cancelar a assinatura Premium?
+                    </summary>
+                    <p class="mt-4 text-gray-600">
+                        O plano Premium é pagamento único (R$ 79,90) com acesso vitalício. Não há mensalidade ou renovação automática. Você paga uma vez e tem acesso para sempre!
+                    </p>
+                </details>
+                
+                <details class="bg-gray-50 rounded-lg p-6 shadow-sm">
+                    <summary class="font-bold text-lg text-gray-900 cursor-pointer">
+                        Quanto tempo leva para completar a simulação?
+                    </summary>
+                    <p class="mt-4 text-gray-600">
+                        De 15 a 30 minutos dependendo do plano. O importante é responder com honestidade para uma análise precisa.
+                    </p>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Final -->
+    <section class="gradient-bg py-20 px-4">
+        <div class="max-w-4xl mx-auto text-center text-white">
+            <h2 class="text-4xl font-bold mb-6">Pronto para Aumentar suas Chances?</h2>
+            <p class="text-xl text-blue-100 mb-8">
+                Comece agora sua preparação e vá para a entrevista com confiança!
+            </p>
+            <button onclick="location.href='simulador.html'" class="bg-white text-blue-600 px-10 py-5 rounded-lg hover:bg-blue-50 transition font-bold text-xl shadow-2xl">
+                <i class="fas fa-rocket mr-2"></i>
+                Iniciar Simulação Gratuita
+            </button>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400 py-12 px-4">
+        <div class="max-w-7xl mx-auto text-center">
+            <div class="flex items-center justify-center mb-6">
+                <i class="fas fa-passport text-blue-500 text-3xl mr-3"></i>
+                <span class="text-xl font-bold text-white">Visto Americano</span>
+            </div>
+            <p class="mb-4">Prepare-se com confiança para sua entrevista na embaixada americana</p>
+            <p class="text-sm">© 2025 Visto Americano. Todos os direitos reservados.</p>
+            <p class="text-xs mt-4 text-gray-500">
+                Este site não é afiliado ao governo dos Estados Unidos. É uma ferramenta de preparação independente.
+            </p>
+        </div>
+    </footer>
+
+    <!-- ⭐ NOVO: Script de Autenticação -->
+    <script>
+        const API_URL = 'http://localhost:8000';
+
+        // Verificar se está logado ao carregar a página
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            const authButtons = document.getElementById('authButtons');
+            const userPlanBadge = document.getElementById('userPlanBadge');
+            
+            if (token) {
+                // Usuário logado - mostrar botão de logout
+                authButtons.innerHTML = `
+                    <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold transition">
+                        Sair
+                    </button>
+                `;
+                
+                // Mostrar links Dashboard e Histórico
+                document.getElementById('linkDashboard').classList.remove('hidden');
+                document.getElementById('linkHistorico').classList.remove('hidden');
+
+                // Verificar plano do usuário
+                fetch(`${API_URL}/api/pagamentos/status`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    userPlanBadge.classList.remove('hidden');
+                    if (data.plano === 'premium') {
+                        userPlanBadge.innerHTML = `
+                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-900">
+                                <i class="fas fa-crown mr-2"></i> Premium
+                            </span>
+                        `;
+                    } else {
+                        userPlanBadge.innerHTML = `
+                            <a href="upgrade.html" class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gray-200 hover:bg-gray-300 text-gray-700 transition">
+                                <i class="fas fa-arrow-up mr-2"></i> Fazer Upgrade
+                            </a>
+                        `;
+                    }
+                })
+                .catch(err => {
+                    console.error('Erro ao verificar plano:', err);
+                });
+            }
+        });
+        
+        // Função de logout
+        function logout() {
+            if (confirm('Deseja realmente sair?')) {
+                localStorage.removeItem('token');
+                window.location.reload();
+            }
+        }
+    </script>
+
+</body>
+</html>
