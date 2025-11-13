@@ -82,20 +82,26 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+# ============================================================================
+# ENDPOINTS PÚBLICOS DE PERGUNTAS (SEM AUTENTICAÇÃO)
+# ============================================================================
+
 @app.get("/api/perguntas-ds160", response_model=List[schemas.PerguntaDS160Resposta])
 def listar_perguntas_ds160(
     gratuito: bool = None, 
     categoria: str = None, 
-    db: Session = Depends(get_db),
-    usuario: models.Usuario = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
-    """Listar perguntas DS-160 com limite para usuários gratuitos"""
+    """
+    Listar perguntas DS-160 - ENDPOINT PÚBLICO
+    - Se gratuito=true: retorna apenas perguntas gratuitas
+    - Se não informado: retorna todas as perguntas
+    """
     query = db.query(models.PerguntaDS160)
     
-    # Se usuário é GRATUITO, mostrar apenas perguntas gratuitas
-    if usuario.tipo_plano == "gratuito":
-        query = query.filter(models.PerguntaDS160.gratuita == True)  # ✅ CORRIGIDO: gratuita
-    # Se usuário é PREMIUM, mostrar TODAS as perguntas (não filtrar)
+    # Filtrar por gratuito se solicitado
+    if gratuito is True:
+        query = query.filter(models.PerguntaDS160.gratuita == True)
     
     if categoria:
         query = query.filter(models.PerguntaDS160.categoria == categoria)
@@ -108,23 +114,57 @@ def listar_perguntas_ds160(
 def listar_perguntas_entrevista(
     gratuito: bool = None, 
     categoria: str = None, 
-    db: Session = Depends(get_db),
-    usuario: models.Usuario = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
-    """Listar perguntas de Entrevista com limite para usuários gratuitos"""
+    """
+    Listar perguntas de Entrevista - ENDPOINT PÚBLICO
+    - Se gratuito=true: retorna apenas perguntas gratuitas
+    - Se não informado: retorna todas as perguntas
+    """
     query = db.query(models.PerguntaEntrevista)
     
-    # Se usuário é GRATUITO, mostrar apenas perguntas gratuitas
-    if usuario.tipo_plano == "gratuito":
-        query = query.filter(models.PerguntaEntrevista.gratuita == True)  # ✅ CORRIGIDO: gratuita
-    # Se usuário é PREMIUM, mostrar TODAS as perguntas (não filtrar)
+    # Filtrar por gratuito se solicitado
+    if gratuito is True:
+        query = query.filter(models.PerguntaEntrevista.gratuita == True)
     
     if categoria:
         query = query.filter(models.PerguntaEntrevista.categoria == categoria)
     
     perguntas = query.order_by(models.PerguntaEntrevista.ordem).all()
     
-    return perguntas   
+    return perguntas
+
+@app.get("/api/perguntas/stats")
+def estatisticas_perguntas(db: Session = Depends(get_db)):
+    """Estatísticas públicas sobre perguntas disponíveis"""
+    
+    total_ds160 = db.query(models.PerguntaDS160).count()
+    gratuitas_ds160 = db.query(models.PerguntaDS160).filter(
+        models.PerguntaDS160.gratuita == True
+    ).count()
+    
+    total_entrevista = db.query(models.PerguntaEntrevista).count()
+    gratuitas_entrevista = db.query(models.PerguntaEntrevista).filter(
+        models.PerguntaEntrevista.gratuita == True
+    ).count()
+    
+    return {
+        "ds160": {
+            "total": total_ds160,
+            "gratuitas": gratuitas_ds160,
+            "premium": total_ds160 - gratuitas_ds160
+        },
+        "entrevista": {
+            "total": total_entrevista,
+            "gratuitas": gratuitas_entrevista,
+            "premium": total_entrevista - gratuitas_entrevista
+        },
+        "total_geral": total_ds160 + total_entrevista
+    }
+
+# ============================================================================
+# ENDPOINT DE AVALIAÇÃO
+# ============================================================================
 
 @app.post("/api/avaliar", response_model=schemas.ResultadoAvaliacao)
 def avaliar_respostas(
@@ -257,13 +297,9 @@ def tornar_premium(usuario_id: int, db: Session = Depends(get_db)):
             "plano": usuario.tipo_plano
         }
     }
+
 # ============================================================================
-# ADICIONAR NO FINAL DO ARQUIVO app/main.py
-# ============================================================================
-# 
-# Sistema de Recuperação de Senha
-# Cole este código ANTES da linha: if __name__ == "__main__":
-#
+# SISTEMA DE RECUPERAÇÃO DE SENHA
 # ============================================================================
 
 from datetime import datetime, timedelta
@@ -387,10 +423,6 @@ def resetar_senha(token: str, nova_senha: str, db: Session = Depends(get_db)):
         "sucesso": True
     }
 
-
-# ============================================================================
-# FIM DO CÓDIGO DE RECUPERAÇÃO DE SENHA
-# ============================================================================
 
 # ============================================================================
 # DASHBOARD DO USUÁRIO
@@ -1007,7 +1039,7 @@ async def exportar_pdf(
     )
 
 # ============================================================================
-# FIM DA EXPORTAÇÃO PDF
+# FIM DO CÓDIGO
 # ============================================================================
 
 if __name__ == "__main__":
