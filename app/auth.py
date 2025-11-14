@@ -24,16 +24,13 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
 
+
 def gerar_hash_senha(senha: str) -> str:
     """Gera hash da senha com proteção contra limite de 72 bytes do bcrypt"""
     senha_bytes = senha.encode('utf-8')
     if len(senha_bytes) > 72:
         senha = senha_bytes[:72].decode('utf-8', errors='ignore')
     return pwd_context.hash(senha)
-
-def verificar_senha(senha_plana: str, senha_hash: str) -> bool:
-    """Verifica se a senha está correta"""
-    return pwd_context.verify(senha_plana, senha_hash)
 
 
 def verificar_senha(senha_plana: str, senha_hash: str) -> bool:
