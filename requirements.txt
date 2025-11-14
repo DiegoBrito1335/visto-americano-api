@@ -12,3 +12,4 @@ stripe==7.5.0
 gunicorn==21.2.0
 email-validator==2.1.0
 reportlab==4.0.7
+argon2-cffi
