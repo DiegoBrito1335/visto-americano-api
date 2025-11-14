@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 from typing import List, Union
 from datetime import timedelta
 import uvicorn
+import os
+
 from app.database import engine, get_db, Base
 from app import models, schemas
 from app.auth import (
@@ -15,23 +17,45 @@ from app.auth import (
 )
 from app.pagamentos import router as pagamentos_router
 
+# Criar tabelas
 Base.metadata.create_all(bind=engine)
 
+# ================================
+#   FASTAPI CONFIG
+# ================================
 app = FastAPI(
     title="API Visto Americano",
     description="API para simulação de preparação para visto americano",
     version="1.0.0",
 )
 
+# Rotas de pagamento
 app.include_router(pagamentos_router)
+
+# ================================
+#   CORS SEGURO (ATUALIZADO)
+# ================================
+FRONTEND_URL = os.getenv("URL_FRONTEND", "https://visto-americano-api.vercel.app")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        FRONTEND_URL,
+        "https://visto-americano-api.vercel.app",
+        "http://localhost:8080",
+        "http://localhost:3000",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:3000",
+        "*"  # Aceita todas as origens (mantenha temporariamente)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ================================
+#   ROTAS
+# ================================
 
 @app.get("/")
 def home():
@@ -39,8 +63,13 @@ def home():
         "mensagem": "API Visto Americano funcionando!",
         "versao": "1.0.0",
         "documentacao": "/docs",
+        "frontend_autorizado": FRONTEND_URL
     }
 
+
+# ============================================================
+# REGISTRO DE USUÁRIO
+# ============================================================
 @app.post("/api/registrar", response_model=schemas.UsuarioResposta, status_code=status.HTTP_201_CREATED)
 def registrar_usuario(usuario: schemas.UsuarioCriar, db: Session = Depends(get_db)):
     """Registrar novo usuário"""
@@ -65,6 +94,10 @@ def registrar_usuario(usuario: schemas.UsuarioCriar, db: Session = Depends(get_d
     db.refresh(novo_usuario)
     return novo_usuario
 
+
+# ============================================================
+# LOGIN
+# ============================================================
 @app.post("/api/login", response_model=schemas.Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """Login de usuário"""
@@ -82,71 +115,43 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-# ============================================================================
-# ENDPOINTS PÚBLICOS DE PERGUNTAS (SEM AUTENTICAÇÃO)
-# ============================================================================
 
+# ============================================================
+# PERGUNTAS DS160 / ENTREVISTA (PÚBLICAS)
+# ============================================================
 @app.get("/api/perguntas-ds160", response_model=List[schemas.PerguntaDS160Resposta])
-def listar_perguntas_ds160(
-    gratuito: bool = None, 
-    categoria: str = None, 
-    db: Session = Depends(get_db)
-):
-    """
-    Listar perguntas DS-160 - ENDPOINT PÚBLICO
-    - Se gratuito=true: retorna apenas perguntas gratuitas
-    - Se não informado: retorna todas as perguntas
-    """
+def listar_perguntas_ds160(gratuito: bool = None, categoria: str = None, db: Session = Depends(get_db)):
     query = db.query(models.PerguntaDS160)
     
-    # Filtrar por gratuito se solicitado
     if gratuito is True:
         query = query.filter(models.PerguntaDS160.gratuita == True)
     
     if categoria:
         query = query.filter(models.PerguntaDS160.categoria == categoria)
     
-    perguntas = query.order_by(models.PerguntaDS160.ordem).all()
-    
-    return perguntas
-    
+    return query.order_by(models.PerguntaDS160.ordem).all()
+
+
 @app.get("/api/perguntas-entrevista", response_model=List[schemas.PerguntaEntrevistaResposta])
-def listar_perguntas_entrevista(
-    gratuito: bool = None, 
-    categoria: str = None, 
-    db: Session = Depends(get_db)
-):
-    """
-    Listar perguntas de Entrevista - ENDPOINT PÚBLICO
-    - Se gratuito=true: retorna apenas perguntas gratuitas
-    - Se não informado: retorna todas as perguntas
-    """
+def listar_perguntas_entrevista(gratuito: bool = None, categoria: str = None, db: Session = Depends(get_db)):
     query = db.query(models.PerguntaEntrevista)
     
-    # Filtrar por gratuito se solicitado
     if gratuito is True:
         query = query.filter(models.PerguntaEntrevista.gratuita == True)
     
     if categoria:
         query = query.filter(models.PerguntaEntrevista.categoria == categoria)
     
-    perguntas = query.order_by(models.PerguntaEntrevista.ordem).all()
-    
-    return perguntas
+    return query.order_by(models.PerguntaEntrevista.ordem).all()
+
 
 @app.get("/api/perguntas/stats")
 def estatisticas_perguntas(db: Session = Depends(get_db)):
-    """Estatísticas públicas sobre perguntas disponíveis"""
-    
     total_ds160 = db.query(models.PerguntaDS160).count()
-    gratuitas_ds160 = db.query(models.PerguntaDS160).filter(
-        models.PerguntaDS160.gratuita == True
-    ).count()
+    gratuitas_ds160 = db.query(models.PerguntaDS160).filter(models.PerguntaDS160.gratuita == True).count()
     
     total_entrevista = db.query(models.PerguntaEntrevista).count()
-    gratuitas_entrevista = db.query(models.PerguntaEntrevista).filter(
-        models.PerguntaEntrevista.gratuita == True
-    ).count()
+    gratuitas_entrevista = db.query(models.PerguntaEntrevista).filter(models.PerguntaEntrevista.gratuita == True).count()
     
     return {
         "ds160": {
@@ -162,22 +167,17 @@ def estatisticas_perguntas(db: Session = Depends(get_db)):
         "total_geral": total_ds160 + total_entrevista
     }
 
-# ============================================================================
-# ENDPOINT DE AVALIAÇÃO
-# ============================================================================
 
+# ============================================================
+# AVALIAR RESPOSTAS
+# ============================================================
 @app.post("/api/avaliar", response_model=schemas.ResultadoAvaliacao)
-def avaliar_respostas(
-    dados: Union[List[schemas.RespostaUsuario], schemas.TentativaCriar], 
-    db: Session = Depends(get_db)
-):
-    """Avaliar respostas - aceita lista ou objeto"""
-    
+def avaliar_respostas(dados: Union[List[schemas.RespostaUsuario], schemas.TentativaCriar], db: Session = Depends(get_db)):
     if isinstance(dados, list):
         respostas = dados
     else:
         respostas = dados.respostas
-    
+
     pontuacao_categorias = {
         "vinculos_brasil": 0,
         "situacao_financeira": 0,
@@ -191,21 +191,20 @@ def avaliar_respostas(
     
     for resposta in respostas:
         if resposta.tipo_pergunta == "ds160":
-            pergunta = db.query(models.PerguntaDS160).filter(
-                models.PerguntaDS160.id == resposta.pergunta_id
-            ).first()
+            pergunta = db.query(models.PerguntaDS160).filter(models.PerguntaDS160.id == resposta.pergunta_id).first()
         else:
-            pergunta = db.query(models.PerguntaEntrevista).filter(
-                models.PerguntaEntrevista.id == resposta.pergunta_id
-            ).first()
+            pergunta = db.query(models.PerguntaEntrevista).filter(models.PerguntaEntrevista.id == resposta.pergunta_id).first()
         
         if not pergunta:
             continue
         
         pontos = 0
+        
+        # Pontuação pela resposta
         if len(resposta.resposta_usuario) > 10:
             pontos = pergunta.peso_avaliacao * 0.7
         
+        # Pontos de palavras positivas
         if hasattr(pergunta, 'palavras_positivas') and pergunta.palavras_positivas:
             for palavra in pergunta.palavras_positivas:
                 if palavra.lower() in resposta.resposta_usuario.lower():
@@ -223,15 +222,15 @@ def avaliar_respostas(
         categoria_key = categoria_map.get(pergunta.categoria, "perfil_pessoal")
         pontuacao_categorias[categoria_key] += pontos
     
+    # Cálculo final
     pontuacao_maxima = sum(p.peso_avaliacao for p in db.query(models.PerguntaDS160).all()[:total_perguntas])
-    pontuacao_geral = min(100, (pontuacao_total / pontuacao_maxima * 100) if pontuacao_maxima > 0 else 0)
+    pontuacao_geral = min(100, (pontuacao_total / pontuacao_maxima * 100) if pontuacao_maxima else 0)
     
-    if pontuacao_geral >= 70:
-        probabilidade = "Alta"
-    elif pontuacao_geral >= 50:
-        probabilidade = "Média"
-    else:
-        probabilidade = "Baixa"
+    probabilidade = (
+        "Alta" if pontuacao_geral >= 70 else
+        "Média" if pontuacao_geral >= 50 else
+        "Baixa"
+    )
     
     categorias_ordenadas = sorted(pontuacao_categorias.items(), key=lambda x: x[1], reverse=True)
     pontos_fortes = [cat[0].replace("_", " ").title() for cat in categorias_ordenadas[:2]]
@@ -241,7 +240,7 @@ def avaliar_respostas(
     if pontuacao_geral < 70:
         recomendacoes.append("Fortaleça seus vínculos com o Brasil (emprego, família, propriedades)")
     if pontuacao_categorias["situacao_financeira"] < 50:
-        recomendacoes.append("Organize documentos financeiros (extratos, declaração IR, comprovantes)")
+        recomendacoes.append("Organize documentos financeiros (extratos, IR, comprovantes)")
     
     return schemas.ResultadoAvaliacao(
         pontuacao_geral=round(pontuacao_geral, 2),
@@ -253,7 +252,6 @@ def avaliar_respostas(
         total_perguntas=total_perguntas,
         perguntas_respondidas=total_perguntas
     )
-
 
 @app.get("/api/usuarios/listar")
 def listar_todos_usuarios(db: Session = Depends(get_db)):
