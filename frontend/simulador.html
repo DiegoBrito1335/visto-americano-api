@@ -348,18 +348,20 @@
                         const respostasArray = Object.values(this.respostas);
                         
                         // Enviar para API
+                        const token = localStorage.getItem('token');
                         const resposta = await fetch(`${this.apiUrl}/api/avaliar`, {
                             method: 'POST',
                             headers: {
-                                'Content-Type': 'application/json'
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
                             },
                             body: JSON.stringify(respostasArray)
                         });
-                        
+
                         if (!resposta.ok) throw new Error('Erro ao avaliar respostas');
-                        
+
                         const resultado = await resposta.json();
-                        
+
                         // Salvar no localStorage
                         localStorage.setItem('resultadoVisto', JSON.stringify(resultado));
                         localStorage.setItem('respostasVisto', JSON.stringify(respostasArray));
