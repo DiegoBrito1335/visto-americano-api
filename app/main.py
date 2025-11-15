@@ -124,7 +124,7 @@ def listar_perguntas_ds160(gratuito: bool = None, categoria: str = None, db: Ses
     query = db.query(models.PerguntaDS160)
     
     if gratuito is True:
-        query = query.filter(models.PerguntaDS160.gratuita == True)
+        query = query.filter(models.PerguntaDS160.gratuito == True)
     
     if categoria:
         query = query.filter(models.PerguntaDS160.categoria == categoria)
@@ -137,7 +137,7 @@ def listar_perguntas_entrevista(gratuito: bool = None, categoria: str = None, db
     query = db.query(models.PerguntaEntrevista)
     
     if gratuito is True:
-        query = query.filter(models.PerguntaEntrevista.gratuita == True)
+        query = query.filter(models.PerguntaEntrevista.gratuito == True)
     
     if categoria:
         query = query.filter(models.PerguntaEntrevista.categoria == categoria)
