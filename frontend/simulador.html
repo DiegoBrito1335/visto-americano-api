@@ -349,6 +349,7 @@
                         
                         // Enviar para API
                         const token = localStorage.getItem('token');
+                        console.log('Enviando:', JSON.stringify(respostasArray, null, 2));
                         const resposta = await fetch(`${this.apiUrl}/api/avaliar`, {
                             method: 'POST',
                             headers: {
