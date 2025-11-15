@@ -171,13 +171,19 @@ def estatisticas_perguntas(db: Session = Depends(get_db)):
 # ============================================================
 # AVALIAR RESPOSTAS
 # ============================================================
-@app.post("/api/avaliar", response_model=schemas.ResultadoAvaliacao)
-def avaliar_respostas(dados: Union[List[schemas.RespostaUsuario], schemas.TentativaCriar], db: Session = Depends(get_db)):
-    if isinstance(dados, list):
-        respostas = dados
-    else:
-        respostas = dados.respostas
-
+@app.post("/api/avaliar")
+def avaliar_respostas(
+    dados: schemas.TentativaCriar,
+    db: Session = Depends(get_db),
+    current_user: models.Usuario = Depends(get_current_user)
+):
+    """
+    Avalia as respostas do usuário e SALVA no banco de dados.
+    CORRIGIDO: Agora salva tentativa e retorna tentativa_id!
+    """
+    respostas = dados.respostas
+    
+    # Inicializar pontuações por categoria
     pontuacao_categorias = {
         "vinculos_brasil": 0,
         "situacao_financeira": 0,
@@ -188,70 +194,130 @@ def avaliar_respostas(dados: Union[List[schemas.RespostaUsuario], schemas.Tentat
     
     total_perguntas = len(respostas)
     pontuacao_total = 0
+    peso_total = 0
     
+    # Avaliar cada resposta
     for resposta in respostas:
         if resposta.tipo_pergunta == "ds160":
-            pergunta = db.query(models.PerguntaDS160).filter(models.PerguntaDS160.id == resposta.pergunta_id).first()
+            pergunta = db.query(models.PerguntaDS160).filter(
+                models.PerguntaDS160.id == resposta.pergunta_id
+            ).first()
         else:
-            pergunta = db.query(models.PerguntaEntrevista).filter(models.PerguntaEntrevista.id == resposta.pergunta_id).first()
+            pergunta = db.query(models.PerguntaEntrevista).filter(
+                models.PerguntaEntrevista.id == resposta.pergunta_id
+            ).first()
         
         if not pergunta:
             continue
         
+        # Calcular pontuação da resposta
         pontos = 0
         
-        # Pontuação pela resposta
+        # Pontuação pela resposta (70% se respondeu substancialmente)
         if len(resposta.resposta_usuario) > 10:
             pontos = pergunta.peso_avaliacao * 0.7
         
-        # Pontos de palavras positivas
+        # Pontos de palavras positivas (se existir)
         if hasattr(pergunta, 'palavras_positivas') and pergunta.palavras_positivas:
             for palavra in pergunta.palavras_positivas:
                 if palavra.lower() in resposta.resposta_usuario.lower():
                     pontos += 0.5
         
         pontuacao_total += pontos
+        peso_total += pergunta.peso_avaliacao
         
+        # Mapear categoria
         categoria_map = {
             "vinculos": "vinculos_brasil",
             "financeiro": "situacao_financeira",
             "viagem": "proposito_viagem",
-            "pessoal": "perfil_pessoal"
+            "pessoal": "perfil_pessoal",
+            "historico": "historico_viagens"
         }
         
-        categoria_key = categoria_map.get(pergunta.categoria, "perfil_pessoal")
+        categoria_key = categoria_map.get(pergunta.categoria.lower(), "perfil_pessoal")
         pontuacao_categorias[categoria_key] += pontos
     
-    # Cálculo final
-    pontuacao_maxima = sum(p.peso_avaliacao for p in db.query(models.PerguntaDS160).all()[:total_perguntas])
-    pontuacao_geral = min(100, (pontuacao_total / pontuacao_maxima * 100) if pontuacao_maxima else 0)
+    # Calcular pontuação geral (0-100)
+    pontuacao_geral = (pontuacao_total / peso_total * 100) if peso_total > 0 else 0
+    pontuacao_geral = min(100, pontuacao_geral)  # Limitar a 100
     
-    probabilidade = (
-        "Alta" if pontuacao_geral >= 70 else
-        "Média" if pontuacao_geral >= 50 else
-        "Baixa"
+    # Determinar probabilidade
+    if pontuacao_geral >= 70:
+        probabilidade = "Alta"
+    elif pontuacao_geral >= 50:
+        probabilidade = "Média"
+    else:
+        probabilidade = "Baixa"
+    
+    # Identificar pontos fortes e fracos
+    categorias_ordenadas = sorted(
+        pontuacao_categorias.items(), 
+        key=lambda x: x[1], 
+        reverse=True
     )
-    
-    categorias_ordenadas = sorted(pontuacao_categorias.items(), key=lambda x: x[1], reverse=True)
     pontos_fortes = [cat[0].replace("_", " ").title() for cat in categorias_ordenadas[:2]]
     pontos_fracos = [cat[0].replace("_", " ").title() for cat in categorias_ordenadas[-2:]]
     
+    # Gerar recomendações
     recomendacoes = []
     if pontuacao_geral < 70:
         recomendacoes.append("Fortaleça seus vínculos com o Brasil (emprego, família, propriedades)")
     if pontuacao_categorias["situacao_financeira"] < 50:
         recomendacoes.append("Organize documentos financeiros (extratos, IR, comprovantes)")
+    if pontuacao_categorias["proposito_viagem"] < 50:
+        recomendacoes.append("Deixe claro o propósito da viagem e planeje o roteiro detalhadamente")
+    if pontuacao_categorias["historico_viagens"] < 50:
+        recomendacoes.append("Se possível, viaje para outros países antes de solicitar o visto americano")
     
-    return schemas.ResultadoAvaliacao(
-        pontuacao_geral=round(pontuacao_geral, 2),
-        probabilidade=probabilidade,
+    if not recomendacoes:
+        recomendacoes.append("Continue se preparando e revise suas respostas antes da entrevista")
+    
+    # ====== SALVAR NO BANCO DE DADOS ======
+    from datetime import datetime
+    
+    # Criar registro da tentativa
+    nova_tentativa = models.Tentativa(
+        usuario_id=current_user.id,
+        tipo=dados.tipo,
+        data_tentativa=datetime.utcnow(),
+        pontuacao_final=pontuacao_geral,
         pontuacao_categorias=pontuacao_categorias,
-        pontos_fortes=pontos_fortes,
-        pontos_fracos=pontos_fracos,
-        recomendacoes=recomendacoes,
-        total_perguntas=total_perguntas,
-        perguntas_respondidas=total_perguntas
+        probabilidade=probabilidade,
+        tempo_gasto=0,  # Pode ser enviado do frontend
+        completo=True
     )
+    
+    db.add(nova_tentativa)
+    db.commit()
+    db.refresh(nova_tentativa)
+    
+    # Salvar cada resposta individual
+    for resposta in respostas:
+        nova_resposta = models.Resposta(
+            tentativa_id=nova_tentativa.id,
+            pergunta_id=resposta.pergunta_id,
+            tipo_pergunta=resposta.tipo_pergunta,
+            resposta_usuario=resposta.resposta_usuario,
+            tempo_resposta=0  # Pode ser enviado do frontend
+        )
+        db.add(nova_resposta)
+    
+    db.commit()
+    # ====== FIM DA CORREÇÃO ======
+    
+    # Retornar resultado COM tentativa_id
+    return {
+        "tentativa_id": nova_tentativa.id,  # ← CAMPO CRÍTICO ADICIONADO!
+        "pontuacao_geral": round(pontuacao_geral, 2),
+        "probabilidade": probabilidade,
+        "pontuacao_categorias": pontuacao_categorias,
+        "pontos_fortes": pontos_fortes,
+        "pontos_fracos": pontos_fracos,
+        "recomendacoes": recomendacoes,
+        "total_perguntas": total_perguntas,
+        "perguntas_respondidas": total_perguntas
+    }
 
 @app.get("/api/usuarios/listar")
 def listar_todos_usuarios(db: Session = Depends(get_db)):
