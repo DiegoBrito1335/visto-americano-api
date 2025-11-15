@@ -298,8 +298,7 @@ def avaliar_respostas(
             tentativa_id=nova_tentativa.id,
             pergunta_id=resposta.pergunta_id,
             tipo_pergunta=resposta.tipo_pergunta,
-            resposta_usuario=resposta.resposta_usuario,
-            tempo_resposta=0  # Pode ser enviado do frontend
+            resposta_usuario=resposta.resposta_usuario
         )
         db.add(nova_resposta)
     
