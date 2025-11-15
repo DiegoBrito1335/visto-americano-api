@@ -356,7 +356,10 @@
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${token}`
                             },
-                            body: JSON.stringify(respostasArray)
+                            body: JSON.stringify({
+                                tipo: "completo",
+                                respostas: respostasArray
+                        })
                         });
 
                         if (!resposta.ok) throw new Error('Erro ao avaliar respostas');
