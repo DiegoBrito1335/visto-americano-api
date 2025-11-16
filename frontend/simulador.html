@@ -268,8 +268,8 @@
                         // Verificar plano do usuário via API
                         const statusResponse = await fetch(`${this.apiUrl}/api/pagamentos/status`, { headers });
                         const statusData = await statusResponse.json();
-                        const isPremium = statusData.plano === 'premium';
-                        
+                        const isPremium = statusData.plano === 'premium';  // ← CORRIGIDO
+
                         console.log('Plano do usuário:', isPremium ? 'PREMIUM' : 'GRATUITO');
                         
                         // Carregar perguntas DS-160
