@@ -40,7 +40,7 @@ class PerguntaDS160Base(BaseModel):
     resposta_ideal: Optional[str] = None
     peso_avaliacao: int = 5
     dica: Optional[str] = None
-    gratuito: bool = False
+    gratuita: bool = False  # ← CORRIGIDO
     ordem: int = 0
 
 class PerguntaDS160Resposta(PerguntaDS160Base):
@@ -59,7 +59,7 @@ class PerguntaEntrevistaBase(BaseModel):
     palavras_negativas: Optional[List[str]] = None
     peso_avaliacao: int = 5
     dica: Optional[str] = None
-    gratuito: bool = False
+    gratuita: bool = False
     ordem: int = 0
 
 class PerguntaEntrevistaResposta(PerguntaEntrevistaBase):
