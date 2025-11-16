@@ -1102,6 +1102,46 @@ async def exportar_pdf(
     )
 
 # ============================================================================
+# STRIPE WEBHOOK
+# ============================================================================
+
+@app.post("/api/webhook/stripe")
+async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
+    """Webhook do Stripe para atualizar plano após pagamento"""
+    payload = await request.body()
+    sig_header = request.headers.get('stripe-signature')
+    
+    try:
+        import stripe
+        stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
+        webhook_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
+        
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, webhook_secret
+        )
+        
+        # Processar evento de pagamento
+        if event['type'] == 'checkout.session.completed':
+            session = event['data']['object']
+            customer_email = session.get('customer_details', {}).get('email')
+            
+            if customer_email:
+                # Atualizar usuário para premium
+                usuario = db.query(models.Usuario).filter(
+                    models.Usuario.email == customer_email
+                ).first()
+                
+                if usuario:
+                    usuario.tipo_plano = 'premium'
+                    db.commit()
+                    print(f"✅ Usuário {customer_email} atualizado para Premium via webhook!")
+        
+        return {"status": "success"}
+        
+    except Exception as e:
+        print(f"❌ Erro no webhook: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+# ============================================================================
 # FIM DO CÓDIGO
 # ============================================================================
 
