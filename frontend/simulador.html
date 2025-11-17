@@ -4,6 +4,64 @@
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-VEKTLSP8Q9"></script>
 <script>
+    // ========== FIX: LIMPAR RESPOSTAS ANTIGAS ==========
+
+// Função para resetar simulação
+function resetarSimulacao() {
+    if (confirm('⚠️ Isso apagará todas as respostas. Deseja continuar?')) {
+        localStorage.removeItem('respostas');
+        localStorage.removeItem('perguntaAtual');
+        localStorage.removeItem('tempoInicio');
+        localStorage.removeItem('simulacaoId');
+        console.log('✅ Simulação resetada');
+        window.location.reload();
+    }
+}
+
+// Verificar ao carregar página
+window.addEventListener('DOMContentLoaded', () => {
+    const respostas = localStorage.getItem('respostas');
+    
+    if (respostas) {
+        const numRespostas = Object.keys(JSON.parse(respostas)).length;
+        
+        // Se tem muitas respostas, perguntar se quer continuar
+        if (numRespostas > 5) {
+            const continuar = confirm(
+                `Você tem ${numRespostas} respostas salvas. Deseja continuar de onde parou?\n\n` +
+                'Clique OK para CONTINUAR ou CANCELAR para RECOMEÇAR'
+            );
+            
+            if (!continuar) {
+                resetarSimulacao();
+            }
+        }
+    }
+});
+
+// Limpar campo ao trocar pergunta
+document.addEventListener('alpine:initialized', () => {
+    // Observer para detectar troca de pergunta
+    const observer = new MutationObserver(() => {
+        const textarea = document.querySelector('textarea');
+        if (textarea && textarea.hasAttribute('x-model')) {
+            // Só limpar se não houver resposta salva
+            const perguntaId = textarea.getAttribute('data-pergunta-id');
+            const respostasSalvas = JSON.parse(localStorage.getItem('respostas') || '{}');
+            
+            if (perguntaId && !respostasSalvas[perguntaId]) {
+                textarea.value = '';
+            }
+        }
+    });
+    
+    observer.observe(document.body, { 
+        childList: true, 
+        subtree: true 
+    });
+});
+
+// ========== FIM DO FIX ==========
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
