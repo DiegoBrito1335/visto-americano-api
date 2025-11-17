@@ -116,31 +116,39 @@
                     x-text="perguntaAtual?.pergunta_texto"></h2>
 
                 <!-- Dica -->
-                <div x-show="perguntaAtual?.dica" class="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6">
+                <div 
+                    x-show="perguntaAtual && perguntaAtual.dica" 
+                    class="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6"
+                >
                     <div class="flex">
                         <i class="fas fa-lightbulb text-amber-500 mt-1 mr-3"></i>
                         <div>
                             <p class="text-sm font-medium text-amber-800">Dica:</p>
-                            <p class="text-sm text-amber-700" x-text="perguntaAtual?.dica"></p>
+                            <p class="text-sm text-amber-700" x-text="perguntaAtual.dica"></p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Answer Input - Texto -->
-                <div x-show="perguntaAtual?.tipo_resposta === 'texto' || !perguntaAtual?.tipo_resposta" class="mb-8">
+                <div 
+                    x-show="!perguntaAtual || !perguntaAtual.tipo_resposta || perguntaAtual.tipo_resposta === 'texto'" 
+                    class="mb-8"
+                >
                     <textarea 
                         x-model="respostaAtual"
                         rows="5"
                         class="w-full border-2 border-gray-300 rounded-lg p-4 focus:border-blue-600 focus:ring-2 focus:ring-blue-200 transition"
                         placeholder="Digite sua resposta aqui... Seja específico e honesto."
                     ></textarea>
+
                     <p class="text-sm text-gray-500 mt-2">
-                        <span x-text="respostaAtual?.length || 0"></span> caracteres
+                        <span x-text="(respostaAtual ? respostaAtual.length : 0)"></span> caracteres
                     </p>
                 </div>
 
                 <!-- Answer Input - Múltipla Escolha -->
-                <div x-show="perguntaAtual?.tipo_resposta === 'multipla_escolha' && perguntaAtual?.opcoes?.length > 0" class="mb-8 space-y-3">
+                <div x-show="perguntaAtual?.tipo_resposta === 'multipla' || perguntaAtual?.tipo_resposta === 'multipla_escolha'" 
+                     class="mb-8 space-y-3">
                     <template x-for="(opcao, index) in perguntaAtual?.opcoes || []" :key="index">
                         <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition"
                                :class="respostaAtual === opcao ? 'border-blue-600 bg-blue-50' : ''">
@@ -155,7 +163,7 @@
                 </div>
 
                 <!-- Answer Input - Sim/Não -->
-                <div x-show="perguntaAtual?.tipo_resposta === 'sim_nao' || (perguntaAtual?.opcoes?.length === 0 && perguntaAtual?.tipo_resposta === 'multipla_escolha')" class="mb-8 flex gap-4">
+                <div x-show="perguntaAtual?.tipo_resposta === 'sim_nao'" class="mb-8 flex gap-4">
                     <label class="flex-1 flex items-center justify-center p-6 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-green-400 hover:bg-green-50 transition"
                            :class="respostaAtual === 'Sim' ? 'border-green-600 bg-green-50' : ''">
                         <input type="radio" value="Sim" x-model="respostaAtual" class="hidden">
@@ -268,7 +276,7 @@
                         // Verificar plano do usuário via API
                         const statusResponse = await fetch(`${this.apiUrl}/api/pagamentos/status`, { headers });
                         const statusData = await statusResponse.json();
-                        const isPremium = statusData.plano === 'premium';  // ← CORRIGIDO
+                        const isPremium = statusData.plano === 'premium';
 
                         console.log('Plano do usuário:', isPremium ? 'PREMIUM' : 'GRATUITO');
                         
@@ -288,9 +296,6 @@
                             ...perguntasEntrevista.map(p => ({...p, tipo_pergunta: 'entrevista'}))
                         ];
                         
-                        // Embaralhar (opcional)
-                        // this.perguntas = this.perguntas.sort(() => Math.random() - 0.5);
-                        
                         if (this.perguntas.length === 0) {
                             throw new Error('Nenhuma pergunta disponível');
                         }
@@ -300,7 +305,7 @@
                     } catch (error) {
                         console.error('Erro:', error);
                         this.erro = true;
-                        this.mensagemErro = 'Não foi possível conectar à API. Certifique-se de que o servidor está rodando em ' + this.apiUrl;
+                        this.mensagemErro = error.message || 'Não foi possível conectar à API';
                         this.loading = false;
                     }
                 },
@@ -357,7 +362,6 @@
                         
                         // Enviar para API
                         const token = localStorage.getItem('token');
-                        console.log('Enviando:', JSON.stringify(respostasArray, null, 2));
                         const resposta = await fetch(`${this.apiUrl}/api/avaliar`, {
                             method: 'POST',
                             headers: {
@@ -367,7 +371,7 @@
                             body: JSON.stringify({
                                 tipo: "completo",
                                 respostas: respostasArray
-                        })
+                            })
                         });
 
                         if (!resposta.ok) throw new Error('Erro ao avaliar respostas');
