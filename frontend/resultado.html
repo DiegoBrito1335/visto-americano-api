@@ -272,6 +272,50 @@
     </div>
 
     <script>
+        // ============================================================
+        // FIX: Normalizar pontuação das categorias
+        // Problema: Backend retorna categorias em pontos absolutos (soma=71)
+        //           mas pontuação geral em percentual (35/100)
+        // Solução: Normalizar categorias para somarem pontuacao_geral
+        // ============================================================
+        function normalizarCategorias(pontuacaoGeral, pontuacaoCategorias) {
+            console.log('📊 Normalizando categorias...');
+            console.log('   Pontuação Geral:', pontuacaoGeral);
+            console.log('   Categorias originais:', pontuacaoCategorias);
+            
+            // Calcular soma total das categorias
+            const somaTotal = Object.values(pontuacaoCategorias).reduce((acc, val) => acc + val, 0);
+            console.log('   Soma original das categorias:', somaTotal);
+            
+            // Se soma é zero, retornar tudo zerado
+            if (somaTotal === 0) {
+                const zeradas = {};
+                Object.keys(pontuacaoCategorias).forEach(cat => {
+                    zeradas[cat] = 0;
+                });
+                return zeradas;
+            }
+            
+            // Normalizar cada categoria proporcionalmente para somar pontuacaoGeral
+            const categoriasNormalizadas = {};
+            
+            Object.keys(pontuacaoCategorias).forEach(categoria => {
+                const valorOriginal = pontuacaoCategorias[categoria];
+                
+                // Calcular proporção: (valor / soma) * pontuacaoGeral
+                const valorNormalizado = (valorOriginal / somaTotal) * pontuacaoGeral;
+                
+                // Arredondar para 1 casa decimal
+                categoriasNormalizadas[categoria] = Math.round(valorNormalizado * 10) / 10;
+            });
+            
+            const novaSoma = Object.values(categoriasNormalizadas).reduce((a, b) => a + b, 0);
+            console.log('   Categorias normalizadas:', categoriasNormalizadas);
+            console.log('   ✅ Nova soma:', novaSoma, '(deve ser ≈', pontuacaoGeral + ')');
+            
+            return categoriasNormalizadas;
+        }
+        
         function resultadoApp() {
             return {
                 loading: true,
@@ -308,6 +352,15 @@
                         
                         if (resultadoStr) {
                             this.resultado = JSON.parse(resultadoStr);
+                            
+                            // ✅ APLICAR NORMALIZAÇÃO DAS CATEGORIAS
+                            if (this.resultado && this.resultado.pontuacao_categorias) {
+                                this.resultado.pontuacao_categorias = normalizarCategorias(
+                                    this.resultado.pontuacao_geral,
+                                    this.resultado.pontuacao_categorias
+                                );
+                            }
+                            
                             this.tempoGasto = tempoStr || '0:00';
                             this.loading = false;
                             
