@@ -4,62 +4,145 @@
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-VEKTLSP8Q9"></script>
 <script>
-    // ========== FIX: LIMPAR RESPOSTAS ANTIGAS ==========
-
-// Função para resetar simulação
-function resetarSimulacao() {
-    if (confirm('⚠️ Isso apagará todas as respostas. Deseja continuar?')) {
-        localStorage.removeItem('respostas');
-        localStorage.removeItem('perguntaAtual');
-        localStorage.removeItem('tempoInicio');
-        localStorage.removeItem('simulacaoId');
-        console.log('✅ Simulação resetada');
-        window.location.reload();
-    }
-}
-
-// Verificar ao carregar página
-window.addEventListener('DOMContentLoaded', () => {
-    const respostas = localStorage.getItem('respostas');
+    // ============================================================
+    // FIX ROBUSTO: LIMPAR RESPOSTAS ANTIGAS E PREVENIR CAMPOS PREENCHIDOS
+    // ============================================================
     
-    if (respostas) {
-        const numRespostas = Object.keys(JSON.parse(respostas)).length;
+    (function() {
+        'use strict';
         
-        // Se tem muitas respostas, perguntar se quer continuar
-        if (numRespostas > 5) {
-            const continuar = confirm(
-                `Você tem ${numRespostas} respostas salvas. Deseja continuar de onde parou?\n\n` +
-                'Clique OK para CONTINUAR ou CANCELAR para RECOMEÇAR'
-            );
+        console.log('🧹 Sistema de limpeza de respostas antigas ativado');
+        
+        const STORAGE_KEYS = {
+            respostas: 'respostas',
+            perguntaAtual: 'perguntaAtual',
+            tempoInicio: 'tempoInicio',
+            simulacaoId: 'simulacaoId'
+        };
+        
+        // Função para resetar simulação
+        window.resetarSimulacao = function() {
+            if (!confirm('⚠️ ATENÇÃO!\n\nIsso apagará TODAS as respostas e você começará do zero.\n\nDeseja continuar?')) {
+                return;
+            }
             
-            if (!continuar) {
-                resetarSimulacao();
+            // Limpar TUDO
+            Object.values(STORAGE_KEYS).forEach(key => {
+                localStorage.removeItem(key);
+            });
+            
+            console.log('✅ Simulação resetada');
+            window.location.reload();
+        };
+        
+        // Verificar ao carregar página
+        window.addEventListener('DOMContentLoaded', () => {
+            const respostasStr = localStorage.getItem('respostas');
+            
+            if (respostasStr) {
+                try {
+                    const respostas = JSON.parse(respostasStr);
+                    const numRespostas = Object.keys(respostas).length;
+                    
+                    // Se tem poucas respostas (<3), considerar como "lixo" e limpar
+                    if (numRespostas > 0 && numRespostas < 3) {
+                        console.log('🗑️ Limpando respostas antigas (< 3)');
+                        Object.values(STORAGE_KEYS).forEach(key => {
+                            localStorage.removeItem(key);
+                        });
+                        return;
+                    }
+                    
+                    // Se tem muitas respostas, perguntar se quer continuar
+                    if (numRespostas >= 5) {
+                        const continuar = confirm(
+                            `📋 Você tem ${numRespostas} respostas salvas.\n\n` +
+                            'Deseja continuar de onde parou?\n\n' +
+                            'OK = Continuar\n' +
+                            'CANCELAR = Recomeçar do zero'
+                        );
+                        
+                        if (!continuar) {
+                            Object.values(STORAGE_KEYS).forEach(key => {
+                                localStorage.removeItem(key);
+                            });
+                            window.location.reload();
+                        }
+                    }
+                } catch (e) {
+                    console.error('Erro ao verificar respostas:', e);
+                    // Se der erro, limpar tudo
+                    Object.values(STORAGE_KEYS).forEach(key => {
+                        localStorage.removeItem(key);
+                    });
+                }
+            }
+        });
+        
+        // Limpar campos ao trocar pergunta
+        let perguntaAnterior = null;
+        
+        function limparCamposSeNecessario() {
+            const perguntaAtual = localStorage.getItem('perguntaAtual');
+            
+            if (perguntaAtual !== perguntaAnterior) {
+                perguntaAnterior = perguntaAtual;
+                
+                setTimeout(() => {
+                    const textarea = document.querySelector('textarea[x-model="respostaAtual"]');
+                    const respostasSalvas = JSON.parse(localStorage.getItem('respostas') || '{}');
+                    
+                    if (textarea) {
+                        const form = textarea.closest('form') || textarea.closest('[x-data]');
+                        const perguntaId = form?.getAttribute('data-pergunta-id');
+                        
+                        // Se não tem resposta salva para esta pergunta, limpar campo
+                        if (perguntaId && !respostasSalvas[perguntaId]) {
+                            if (textarea.value && textarea.value.trim()) {
+                                console.log('🧹 Limpando campo preenchido indevidamente');
+                                textarea.value = '';
+                                textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                            }
+                        }
+                    }
+                }, 150);
             }
         }
-    }
-});
-
-// Limpar campo ao trocar pergunta
-document.addEventListener('alpine:initialized', () => {
-    // Observer para detectar troca de pergunta
-    const observer = new MutationObserver(() => {
-        const textarea = document.querySelector('textarea');
-        if (textarea && textarea.hasAttribute('x-model')) {
-            // Só limpar se não houver resposta salva
-            const perguntaId = textarea.getAttribute('data-pergunta-id');
-            const respostasSalvas = JSON.parse(localStorage.getItem('respostas') || '{}');
+        
+        // Verificar a cada 500ms
+        setInterval(limparCamposSeNecessario, 500);
+        
+        // Observer para mutações no DOM
+        document.addEventListener('alpine:initialized', () => {
+            const observer = new MutationObserver(() => {
+                const textarea = document.querySelector('textarea[x-model="respostaAtual"]');
+                const respostasSalvas = JSON.parse(localStorage.getItem('respostas') || '{}');
+                
+                if (textarea && textarea.value && textarea.value.trim()) {
+                    const form = textarea.closest('form') || textarea.closest('[x-data]');
+                    const perguntaId = form?.getAttribute('data-pergunta-id');
+                    
+                    // Se campo está preenchido mas não deveria estar
+                    if (perguntaId && !respostasSalvas[perguntaId]) {
+                        console.log('⚠️ Campo preenchido detectado - limpando');
+                        textarea.value = '';
+                        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                }
+            });
             
-            if (perguntaId && !respostasSalvas[perguntaId]) {
-                textarea.value = '';
-            }
-        }
-    });
-    
-    observer.observe(document.body, { 
-        childList: true, 
-        subtree: true 
-    });
-});
+            const container = document.querySelector('main') || document.body;
+            observer.observe(container, {
+                childList: true,
+                subtree: true,
+                characterData: true
+            });
+            
+            console.log('👁️ Observer de DOM ativado');
+        });
+        
+        console.log('✅ Sistema de limpeza forçada configurado');
+    })();
 
 // ========== FIM DO FIX ==========
   window.dataLayer = window.dataLayer || [];
@@ -143,9 +226,19 @@ document.addEventListener('alpine:initialized', () => {
                         <span class="text-sm font-medium text-gray-600">Progresso</span>
                         <span class="ml-2 text-sm text-blue-600 font-bold" x-text="Math.round(progresso) + '%'"></span>
                     </div>
-                    <div class="text-sm text-gray-600">
-                        <span class="font-bold" x-text="indiceAtual + 1"></span> / 
-                        <span x-text="totalPerguntas"></span> perguntas
+                    <div class="flex items-center gap-3">
+                        <div class="text-sm text-gray-600">
+                            <span class="font-bold" x-text="indiceAtual + 1"></span> / 
+                            <span x-text="totalPerguntas"></span> perguntas
+                        </div>
+                        <button 
+                            onclick="resetarSimulacao()"
+                            class="text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors font-medium"
+                            title="Limpar todas as respostas e começar do zero"
+                        >
+                            <i class="fas fa-trash-alt mr-1"></i>
+                            Limpar Tudo
+                        </button>
                     </div>
                 </div>
                 <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
@@ -194,6 +287,10 @@ document.addEventListener('alpine:initialized', () => {
                 >
                     <textarea 
                         x-model="respostaAtual"
+                        autocomplete="off"
+                        autocorrect="off"
+                        autocapitalize="off"
+                        spellcheck="false"
                         rows="5"
                         class="w-full border-2 border-gray-300 rounded-lg p-4 focus:border-blue-600 focus:ring-2 focus:ring-blue-200 transition"
                         placeholder="Digite sua resposta aqui... Seja específico e honesto."
@@ -214,6 +311,7 @@ document.addEventListener('alpine:initialized', () => {
                                 type="radio" 
                                 :value="opcao" 
                                 x-model="respostaAtual"
+                                autocomplete="off"
                                 class="w-5 h-5 text-blue-600 focus:ring-blue-500">
                             <span class="ml-3 text-gray-900 font-medium" x-text="opcao"></span>
                         </label>
