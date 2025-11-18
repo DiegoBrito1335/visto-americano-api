@@ -1,0 +1,87 @@
+📦 VISTO-AMERICANO-API/
+├── 📁 # Banco de dados local/
+│   ├── 📄 .db (0B)
+│   ├── 📄 .sqlite (0B)
+│   ├── 📄 .sqlite3 (0B)
+│   ├── 📄 visto_americano.db (0B)
+├── 📁 # IDEs/
+│   ├── 📁 .idea/
+│   ├── 📄 .swo (0B)
+│   ├── 📄 .swp (0B)
+│   ├── 📁 .vscode/
+├── 📁 # Logs/
+│   ├── 📄 .log (0B)
+├── 📁 # OS/
+│   ├── 📄 .DS_Store (0B)
+│   ├── 📄 Thumbs.db (0B)
+├── 📁 # Python/
+│   ├── 📄 $py.class (0B)
+│   ├── 📄 .Python (0B)
+│   ├── 📄 .py[cod] (0B)
+│   ├── 📄 .so (0B)
+│   ├── 📁 env/
+├── 📁 # Variáveis de ambiente/
+│   ├── 📄 .env.local (0B)
+├── 📄 .env.example (482B)
+├── 📄 .gitignore (287B)
+├── 📄 INSTRUCOES_FIX_PDF.md (3.0KB)
+├── 📄 Procfile (55B)
+├── 📁 README.md/
+├── 📄 analise_banco.py (1.5KB)
+├── 📁 app/
+│   ├── 📁 __init__.py/
+│   ├── 📄 atualizar_premium.py (2.6KB)
+│   ├── 📄 auth.py (2.4KB)
+│   ├── 📄 database.py (910B)
+│   ├── 📄 main.py (39.6KB)
+│   ├── 📄 models.py (3.8KB)
+│   ├── 📄 pagamentos.py (7.0KB)
+│   ├── 📄 populate_db.py (12.6KB)
+│   ├── 📁 routers/
+│   │   ├── 📄 __init__.py (0B)
+│   │   ├── 📄 auth.py (3.1KB)
+│   │   ├── 📄 perguntas.py (3.1KB)
+│   ├── 📄 schemas.py (2.7KB)
+│   ├── 📄 verificar_usuarios.py (1.9KB)
+├── 📄 ativar_premium.py (554B)
+├── 📄 build.sh (109B)
+├── 📄 configurar_perguntas_final.py (6.4KB)
+├── 📄 contar_perguntas.py (2.1KB)
+├── 📄 criar_usuario_teste.py (1.7KB)
+├── 📄 fix_gratuitas.py (2.9KB)
+├── 📄 fix_tables.py (1.1KB)
+├── 📁 frontend/
+│   ├── 📄 admin_usuarios.html (6.5KB)
+│   ├── 📁 assets/
+│   ├── 📁 css/
+│   ├── 📄 dashboard.html (20.2KB)
+│   ├── 📄 esqueci-senha.html (8.2KB)
+│   ├── 📄 historico.html (26.3KB)
+│   ├── 📄 index.html (35.8KB)
+│   ├── 📁 js/
+│   ├── 📄 login.html (4.5KB)
+│   ├── 📄 recuperar-senha.html (11.2KB)
+│   ├── 📄 registro.html (6.6KB)
+│   ├── 📄 requirements.txt (1.8KB)
+│   ├── 📄 resultado.html (25.5KB)
+│   ├── 📄 simulador.html (26.7KB)
+│   ├── 📄 sucesso.html (6.6KB)
+│   ├── 📄 upgrade.html (17.6KB)
+├── 📄 gerar_estrutura.py (1.6KB)
+├── 📄 populate_db_completo.py (44.6KB)
+├── 📄 populate_simple.py (36.6KB)
+├── 📄 railway.json (276B)
+├── 📄 reduzir.py (1.4KB)
+├── 📄 reduzir_30.py (2.5KB)
+├── 📄 reduzir_gratuitas_25.py (5.2KB)
+├── 📄 remover_duplicatas.py (7.9KB)
+├── 📄 requirements.txt (325B)
+├── 📄 runtime.txt (11B)
+├── 📁 scripts/
+│   ├── 📄 fix_gratuitas.py (2.4KB)
+├── 📄 tornar_premium_db.py (2.5KB)
+├── 📄 verificar_db.py (1.8KB)
+├── 📄 verificar_dup.py (1.6KB)
+├── 📄 verificar_estrutura_db.py (3.6KB)
+├── 📄 verificar_opcoes.py (510B)
+├── 📄 visto_americano.db (76.0KB)
