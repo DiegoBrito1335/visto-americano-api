@@ -1,32 +1,44 @@
-# Python
+# Byte-compiled / cache
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-venv/
-env/
-ENV/
+.class
 
-# Banco de dados local
+# Virtual env
+env/
+venv/
+.venv/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Databases
 *.db
 *.sqlite
 *.sqlite3
 visto_americano.db
 
-# Variáveis de ambiente
-.env
-.env.local
-
 # IDEs
 .vscode/
 .idea/
-*.swp
-*.swo
 
-# OS
+# mac / windows junk
 .DS_Store
 Thumbs.db
 
 # Logs
 *.log
+
+# Build / packaging
+dist/
+build/
+*.egg-info/
+
+# Node / frontend (if any)
+node_modules/
+
+# Misc
+*.swo
+*.swp
+*.class
