@@ -1,12 +1,12 @@
 from sqlalchemy.orm import Session
-from app.models import Usuario
+from app import models
 
 def ativar_premium(db: Session, user_id: int):
-    user = db.query(Usuario).filter(Usuario.id == user_id).first()
+    user = db.query(models.Usuario).filter(models.Usuario.id == user_id).first()
     if not user:
         return None
-
-    user.premium = True
+    user.tipo_plano = "premium"
+    user.data_expiracao_premium = None
     db.commit()
     db.refresh(user)
     return user
