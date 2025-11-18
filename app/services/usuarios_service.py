@@ -1,31 +1,65 @@
 from sqlalchemy.orm import Session
-from app.models import Usuario
-from app.auth import gerar_hash_senha, verificar_senha
+from datetime import datetime, timedelta
+from jose import jwt
+from passlib.context import CryptContext
+from app import models
+from app.schemas import UsuarioCreate
+import os
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+SECRET_KEY = os.getenv("SECRET_KEY", "sua-chave-secreta-super-segura")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
 
-def get_user_by_email(db: Session, email: str):
-    return db.query(Usuario).filter(Usuario.email == email).first()
+def verificar_senha(plain: str, hashed: str) -> bool:
+    return pwd_context.verify(plain, hashed)
 
 
-def get_user_by_id(db: Session, user_id: int):
-    return db.query(Usuario).filter(Usuario.id == user_id).first()
+def gerar_hash_senha(senha: str) -> str:
+    return pwd_context.hash(senha)
 
 
-def create_user(db: Session, email: str, password: str):
-    hashed_password = gerar_hash_senha(password)
-    user = Usuario(email=email, senha=hashed_password)
-    db.add(user)
+def gerar_token(usuario):
+    dados = {"sub": usuario.email}
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    dados.update({"exp": expire})
+    return jwt.encode(dados, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def criar_usuario(db: Session, usuario: UsuarioCreate):
+    existente = db.query(models.Usuario).filter(
+        models.Usuario.email == usuario.email
+    ).first()
+
+    if existente:
+        raise ValueError("Email já cadastrado")
+
+    hashed = gerar_hash_senha(usuario.senha)
+
+    novo = models.Usuario(
+        nome=usuario.nome,
+        email=usuario.email,
+        senha_hash=hashed
+    )
+
+    db.add(novo)
     db.commit()
-    db.refresh(user)
-    return user
+    db.refresh(novo)
+
+    return novo
 
 
-def validate_user_credentials(db: Session, email: str, password: str):
-    user = get_user_by_email(db, email)
-    if not user:
+def autenticar_usuario(db: Session, email: str, senha: str):
+    usuario = db.query(models.Usuario).filter(
+        models.Usuario.email == email
+    ).first()
+
+    if not usuario:
         return None
-    
-    if not verificar_senha(password, user.senha):
+
+    if not verificar_senha(senha, usuario.senha_hash):
         return None
 
-    return user
+    return usuario
