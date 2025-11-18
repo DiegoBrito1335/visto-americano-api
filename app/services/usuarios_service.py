@@ -1,65 +1,55 @@
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-from jose import jwt
-from passlib.context import CryptContext
+from datetime import timedelta
 from app import models
 from app.schemas import UsuarioCreate
-import os
+from app.core.security import get_password_hash, verify_password, create_access_token
+from app.core.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def get_user_by_email(db: Session, email: str):
+    return db.query(models.Usuario).filter(models.Usuario.email == email).first()
 
-SECRET_KEY = os.getenv("SECRET_KEY", "sua-chave-secreta-super-segura")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
-
-
-def verificar_senha(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
-
-
-def gerar_hash_senha(senha: str) -> str:
-    return pwd_context.hash(senha)
-
-
-def gerar_token(usuario):
-    dados = {"sub": usuario.email}
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    dados.update({"exp": expire})
-    return jwt.encode(dados, SECRET_KEY, algorithm=ALGORITHM)
-
+def get_user_by_id(db: Session, user_id: int):
+    return db.query(models.Usuario).filter(models.Usuario.id == user_id).first()
 
 def criar_usuario(db: Session, usuario: UsuarioCreate):
-    existente = db.query(models.Usuario).filter(
-        models.Usuario.email == usuario.email
-    ).first()
-
+    existente = get_user_by_email(db, usuario.email)
     if existente:
         raise ValueError("Email já cadastrado")
-
-    hashed = gerar_hash_senha(usuario.senha)
-
+    hashed = get_password_hash(usuario.senha)
     novo = models.Usuario(
-        nome=usuario.nome,
+        nome_completo=usuario.nome_completo,
         email=usuario.email,
-        senha_hash=hashed
+        senha_hash=hashed,
+        tipo_plano="gratuito",
+        ativo=True
     )
-
     db.add(novo)
     db.commit()
     db.refresh(novo)
-
     return novo
 
-
 def autenticar_usuario(db: Session, email: str, senha: str):
-    usuario = db.query(models.Usuario).filter(
-        models.Usuario.email == email
-    ).first()
-
-    if not usuario:
+    user = get_user_by_email(db, email)
+    if not user:
         return None
-
-    if not verificar_senha(senha, usuario.senha_hash):
+    if not verify_password(senha, user.senha_hash):
         return None
+    return user
 
-    return usuario
+def gerar_token(usuario, expires_delta: timedelta | None = None):
+    data = {"sub": usuario.email}
+    return create_access_token(data, expires_delta)
+
+def list_users(db: Session):
+    users = db.query(models.Usuario).all()
+    return users
+
+def make_premium(db: Session, user_id: int):
+    user = get_user_by_id(db, user_id)
+    if not user:
+        return None
+    user.tipo_plano = "premium"
+    user.data_expiracao_premium = None
+    db.commit()
+    db.refresh(user)
+    return user
