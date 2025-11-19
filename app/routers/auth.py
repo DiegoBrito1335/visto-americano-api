@@ -5,11 +5,14 @@ from datetime import timedelta
 from app.database import get_db
 from app.core.security import create_access_token, verify_password
 from app.services.usuarios_service import usuarios_service
-from app.schemas import UsuarioLogin, UsuarioResposta, Token
+from app.schemas import UsuarioLogin, Token
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/auth",
+    tags=["Autenticação"]
+)
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=Token, name="login")
 def login(dados: UsuarioLogin, db: Session = Depends(get_db)):
 
     usuario = usuarios_service.autenticar(db, dados.email, dados.senha)
