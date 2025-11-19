@@ -3,15 +3,14 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 
 from app.database import get_db
-from app.schemas import UsuarioCriar, UsuarioLogin, UsuarioResposta, Token
-from app.core.security import create_access_token
-from app.services.usuarios_service import usuarios_service
+from app.schemas import UsuarioCriar, UsuarioResposta
 from app.core.security import get_current_user
+from app.services.usuarios_service import usuarios_service
 
-
-
-router = APIRouter(tags=["Usuários"])  # prefix definido no main.py
-
+router = APIRouter(
+    prefix="/usuarios",
+    tags=["Usuários"]
+)
 
 # ================================
 # REGISTRAR NOVO USUÁRIO
@@ -28,33 +27,7 @@ def registrar(usuario: UsuarioCriar, db: Session = Depends(get_db)):
 
 
 # ================================
-# LOGIN
-# ================================
-@router.post("/login", response_model=Token)
-def login(dados: UsuarioLogin, db: Session = Depends(get_db)):
-    usuario = usuarios_service.autenticar(
-        db=db,
-        email=dados.email,
-        senha=dados.senha,
-    )
-
-    if not usuario:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciais inválidas.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    access_token = create_access_token(
-        data={"sub": usuario.email},
-        expires_delta=timedelta(minutes=60)
-    )
-
-    return {"access_token": access_token, "token_type": "bearer"}
-
-
-# ================================
-# USUÁRIO LOGADO
+# DADOS DO USUÁRIO LOGADO
 # ================================
 @router.get("/me", response_model=UsuarioResposta)
 def me(current_user=Depends(get_current_user)):
