@@ -1,45 +1,49 @@
-# Byte-compiled / cache
+﻿# Python
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 *.pyd
+*.pyc
 
-# Virtual env
-env/
+# Virtual envs
 venv/
-.venv/
+env/
+ENV/
+venv.bak/
+pyvenv.cfg
 
-# Environment files
-.env
-.env.local
-.env.*.local
+# IDEs / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
 
-# Databases
+# Database (local)
 *.db
 *.sqlite
 *.sqlite3
 visto_americano.db
 
-# IDEs
-.vscode/
-.idea/
+# Env files
+.env
+.env.local
+.env.*.local
 
-# mac / windows junk
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-
-# Build / packaging
+# build / distribution
 dist/
 build/
 *.egg-info/
 
-# Node / frontend (if any)
-node_modules/
+# logs
+logs/
+*.log
 
-# Misc
-*.swo
-*.swp
-*.class
+# frontend (caso futuramente use build)
+node_modules/
+.next/
+out/
+
+# misc
+*.bak
+*.tmp
