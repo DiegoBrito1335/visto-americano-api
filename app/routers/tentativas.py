@@ -6,7 +6,25 @@ from app.core.security import get_current_user
 from app.services.tentativas_service import TentativasService
 from app import schemas, models
 
-router = APIRouter(tags=["Tentativas"])
+router = APIRouter(
+    prefix="/tentativas",
+    tags=["Tentativas"]
+)
+
+# =============================================================
+# COMPARAÇÃO (rota fixa — antes das rotas com path dinâmico)
+# =============================================================
+@router.get("/estatisticas/comparacao", response_model=schemas.TentativaComparacao)
+def comparar_tentativas(
+    db: Session = Depends(get_db),
+    usuario: models.Usuario = Depends(get_current_user)
+):
+    stats = TentativasService.comparar_tentativas(db, usuario.id)
+
+    if not stats:
+        raise HTTPException(status_code=404, detail="Nenhuma tentativa encontrada")
+
+    return stats
 
 
 # =============================================================
@@ -67,18 +85,3 @@ def deletar_tentativa(
 
     return {"mensagem": "Tentativa deletada com sucesso"}
 
-
-# =============================================================
-# COMPARAÇÃO
-# =============================================================
-@router.get("/estatisticas/comparacao", response_model=schemas.TentativaComparacao)
-def comparar_tentativas(
-    db: Session = Depends(get_db),
-    usuario: models.Usuario = Depends(get_current_user)
-):
-    stats = TentativasService.comparar_tentativas(db, usuario.id)
-
-    if not stats:
-        raise HTTPException(status_code=404, detail="Nenhuma tentativa encontrada")
-
-    return stats
