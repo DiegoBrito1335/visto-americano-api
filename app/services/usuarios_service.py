@@ -1,55 +1,107 @@
 from sqlalchemy.orm import Session
-from datetime import timedelta
+from fastapi import HTTPException, status
+from datetime import datetime, timedelta
+
 from app import models
-from app.schemas import UsuarioCreate
-from app.core.security import get_password_hash, verify_password, create_access_token
+from app.core.security import hash_password, verify_password
 from app.core.config import settings
 
-def get_user_by_email(db: Session, email: str):
-    return db.query(models.Usuario).filter(models.Usuario.email == email).first()
 
-def get_user_by_id(db: Session, user_id: int):
-    return db.query(models.Usuario).filter(models.Usuario.id == user_id).first()
+class UsuariosService:
 
-def criar_usuario(db: Session, usuario: UsuarioCreate):
-    existente = get_user_by_email(db, usuario.email)
-    if existente:
-        raise ValueError("Email já cadastrado")
-    hashed = get_password_hash(usuario.senha)
-    novo = models.Usuario(
-        nome_completo=usuario.nome_completo,
-        email=usuario.email,
-        senha_hash=hashed,
-        tipo_plano="gratuito",
-        ativo=True
-    )
-    db.add(novo)
-    db.commit()
-    db.refresh(novo)
-    return novo
+    # ===============================
+    # REGISTRAR NOVO USUÁRIO
+    # ===============================
+    def registrar(self, db: Session, email: str, senha: str, nome: str):
+        usuario_existente = (
+            db.query(models.Usuario)
+            .filter(models.Usuario.email == email)
+            .first()
+        )
 
-def autenticar_usuario(db: Session, email: str, senha: str):
-    user = get_user_by_email(db, email)
-    if not user:
-        return None
-    if not verify_password(senha, user.senha_hash):
-        return None
-    return user
+        if usuario_existente:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="E-mail já registrado."
+            )
 
-def gerar_token(usuario, expires_delta: timedelta | None = None):
-    data = {"sub": usuario.email}
-    return create_access_token(data, expires_delta)
+        novo_usuario = models.Usuario(
+            email=email,
+            senha_hash=hash_password(senha),
+            nome_completo=nome,
+            tipo_plano="gratuito",
+            ativo=True,
+            data_cadastro=datetime.utcnow(),
+        )
 
-def list_users(db: Session):
-    users = db.query(models.Usuario).all()
-    return users
+        db.add(novo_usuario)
+        db.commit()
+        db.refresh(novo_usuario)
 
-def make_premium(db: Session, user_id: int):
-    user = get_user_by_id(db, user_id)
-    if not user:
-        return None
-    user.tipo_plano = "premium"
-    user.data_expiracao_premium = None
-    db.commit()
-    db.refresh(user)
-    return user
+        return novo_usuario
+
+    # ===============================
+    # AUTENTICAÇÃO
+    # ===============================
+    def autenticar(self, db: Session, email: str, senha: str):
+        usuario = (
+            db.query(models.Usuario)
+            .filter(models.Usuario.email == email)
+            .first()
+        )
+
+        if not usuario:
+            return None
+        
+        if not verify_password(senha, usuario.senha_hash):
+            return None
+
+        return usuario
+
+    # ===============================
+    # LISTAR TODOS
+    # ===============================
+    def listar_todos(self, db: Session):
+        return db.query(models.Usuario).order_by(models.Usuario.id.asc()).all()
+
+    # ===============================
+    # TRANSFORMAR EM PREMIUM
+    # ===============================
+    def tornar_premium(self, db: Session, usuario_id: int, dias: int = None):
+        usuario = (
+            db.query(models.Usuario)
+            .filter(models.Usuario.id == usuario_id)
+            .first()
+        )
+
+        if not usuario:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuário não encontrado"
+            )
+
+        usuario.tipo_plano = "premium"
+
+        # Tratamento correto para planos temporários ou vitalício
+        if dias:
+            usuario.data_expiracao_premium = datetime.utcnow() + timedelta(days=dias)
+        else:
+            usuario.data_expiracao_premium = None  # Vitalício
+
+        db.commit()
+        db.refresh(usuario)
+
+        return usuario
+
+    # ===============================
+    # BUSCAR POR EMAIL (ÚTIL PARA WEBHOOK / SERVIÇOS)
+    # ===============================
+    def buscar_por_email(self, db: Session, email: str):
+        return (
+            db.query(models.Usuario)
+            .filter(models.Usuario.email == email)
+            .first()
+        )
+
+
+usuarios_service = UsuariosService()

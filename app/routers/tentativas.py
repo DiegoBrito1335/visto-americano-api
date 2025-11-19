@@ -1,31 +1,84 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Optional
 
 from app.database import get_db
-from app.schemas import TentativaCriar
 from app.core.security import get_current_user
-from app.services.tentativas_service import avaliar_respostas, listar_historico, detalhe_tentativa, deletar_tentativa, comparar_tentativas
-from app.schemas import TentativaResposta
+from app.services.tentativas_service import TentativasService
+from app import schemas, models
 
-router = APIRouter()
+router = APIRouter(tags=["Tentativas"])
 
-@router.post("/avaliar")
-def avaliar(dados: TentativaCriar, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    return avaliar_respostas(db, current_user, dados)
 
-@router.get("/", response_model=List[TentativaResposta])
-def historico(db: Session = Depends(get_db), current_user = Depends(get_current_user), limite: int = 50, tipo: Optional[str] = None):
-    return listar_historico(db, current_user, limite, tipo)
+# =============================================================
+# AVALIAR TENTATIVA
+# =============================================================
+@router.post("/avaliar", response_model=schemas.TentativaResposta)
+def avaliar_tentativa(
+    dados: schemas.TentativaCriar,
+    db: Session = Depends(get_db),
+    usuario: models.Usuario = Depends(get_current_user)
+):
+    return TentativasService.avaliar_respostas(db, dados, usuario)
 
-@router.get("/{tentativa_id}")
-def detalhe(tentativa_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    return detalhe_tentativa(db, current_user, tentativa_id)
 
+# =============================================================
+# LISTAR HISTÓRICO
+# =============================================================
+@router.get("/historico", response_model=list[schemas.TentativaHistoricoItem])
+def listar_historico(
+    limite: int = 50,
+    tipo: str | None = None,
+    db: Session = Depends(get_db),
+    usuario: models.Usuario = Depends(get_current_user)
+):
+    return TentativasService.listar_historico(db, usuario.id, limite, tipo)
+
+
+# =============================================================
+# DETALHE DA TENTATIVA
+# =============================================================
+@router.get("/{tentativa_id}", response_model=schemas.TentativaDetalhe)
+def detalhe_tentativa(
+    tentativa_id: int,
+    db: Session = Depends(get_db),
+    usuario: models.Usuario = Depends(get_current_user)
+):
+    tentativa = TentativasService.detalhe_tentativa(db, tentativa_id, usuario.id)
+
+    if not tentativa:
+        raise HTTPException(status_code=404, detail="Tentativa não encontrada")
+
+    return tentativa
+
+
+# =============================================================
+# DELETAR
+# =============================================================
 @router.delete("/{tentativa_id}")
-def deletar(tentativa_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    return deletar_tentativa(db, current_user, tentativa_id)
+def deletar_tentativa(
+    tentativa_id: int,
+    db: Session = Depends(get_db),
+    usuario: models.Usuario = Depends(get_current_user)
+):
+    ok = TentativasService.deletar_tentativa(db, tentativa_id, usuario.id)
 
-@router.get("/comparacao")
-def comparar(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    return comparar_tentativas(db, current_user)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Tentativa não encontrada")
+
+    return {"mensagem": "Tentativa deletada com sucesso"}
+
+
+# =============================================================
+# COMPARAÇÃO
+# =============================================================
+@router.get("/estatisticas/comparacao", response_model=schemas.TentativaComparacao)
+def comparar_tentativas(
+    db: Session = Depends(get_db),
+    usuario: models.Usuario = Depends(get_current_user)
+):
+    stats = TentativasService.comparar_tentativas(db, usuario.id)
+
+    if not stats:
+        raise HTTPException(status_code=404, detail="Nenhuma tentativa encontrada")
+
+    return stats

@@ -1,16 +1,24 @@
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.database import get_db
 from app.core.security import get_current_user
-from app.services.pdf_service import gerar_pdf_stream
+from app.database import get_db
+from app.services.pdf_service import PDFService
+from app import models
 
-router = APIRouter()
+router = APIRouter(tags=["PDF"])
 
-@router.get("/{tentativa_id}/pdf")
-def pdf(tentativa_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    stream = gerar_pdf_stream(db, current_user, tentativa_id)
-    if not stream:
+
+@router.get("/{tentativa_id}")
+def gerar_pdf(
+    tentativa_id: int,
+    db: Session = Depends(get_db),
+    usuario: models.Usuario = Depends(get_current_user)
+):
+    pdf = PDFService.gerar_pdf_tentativa(db, tentativa_id, usuario)
+
+    if pdf is None:
         raise HTTPException(status_code=404, detail="Tentativa não encontrada")
-    return StreamingResponse(stream, media_type="application/pdf")
+
+    return pdf
+

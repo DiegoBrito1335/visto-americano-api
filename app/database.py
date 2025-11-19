@@ -1,28 +1,40 @@
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-import os
-from dotenv import load_dotenv
+from sqlalchemy.orm import sessionmaker, declarative_base
+from app.core.config import settings
 
-load_dotenv()
+# ==============================================================
+# ENGINE — usa a URL do config.py (que já lê .env automaticamente)
+# ==============================================================
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-# Render usa postgres:// mas SQLAlchemy precisa de postgresql://
-if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-# Se não tiver DATABASE_URL, usa SQLite local
-if not DATABASE_URL:
-    DATABASE_URL = "sqlite:///./visto_americano.db"
+DATABASE_URL = settings.DATABASE_URL
 
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+    pool_pre_ping=True,        # Evita desconexões do Railway
+    pool_size=10,              # Tamanho inicial do pool
+    max_overflow=20,           # Número máximo extra de conexões
+    pool_recycle=1800,         # Renova conexões antigas
 )
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# ==============================================================
+# SESSION
+# ==============================================================
+
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
+
+# ==============================================================
+# BASE
+# ==============================================================
+
 Base = declarative_base()
+
+# ==============================================================
+# DEPENDÊNCIA DO FASTAPI
+# ==============================================================
 
 def get_db():
     db = SessionLocal()
