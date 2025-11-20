@@ -1,52 +1,37 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Optional
-
 from app.database import get_db
-from app.schemas import perguntas_schema as schemas
-from app.services.perguntas_service import PerguntasService
+from app.models import PerguntaDS160, PerguntaEntrevista
+from app.schemas.tentativas_schema import RespostaResposta
 
 router = APIRouter(
     prefix="/perguntas",
     tags=["Perguntas"]
 )
 
-# ======================================================
-#                    DS-160
-# ======================================================
-@router.get("/ds160", response_model=List[schemas.PerguntaDS160Resposta])
-def listar_ds160(
-    gratuito: Optional[bool] = None,
-    categoria: Optional[str] = None,
-    db: Session = Depends(get_db)
-):
-    """
-    Lista perguntas DS-160 (gratuitas / premium / por categoria)
-    """
-    return PerguntasService.listar_ds160(db, gratuito, categoria)
+# ============================================================
+#      CARREGAR PERGUNTAS POR CATEGORIA (DS-160, ENTREVISTA)
+# ============================================================
 
+@router.get("", response_model=list[RespostaResposta])
+def get_perguntas(categoria: str, db: Session = Depends(get_db)):
+    """
+    Retorna uma lista de perguntas filtradas por categoria (ds160 ou entrevista).
+    """
+    if categoria == "ds160":
+        perguntas = db.query(PerguntaDS160).filter(PerguntaDS160.categoria == categoria).all()
+    elif categoria == "entrevista":
+        perguntas = db.query(PerguntaEntrevista).filter(PerguntaEntrevista.categoria == categoria).all()
+    else:
+        raise HTTPException(status_code=400, detail="Categoria inválida.")
+    
+    # Convertendo as perguntas para o formato que o frontend precisa
+    return [RespostaResposta(
+        id=pergunta.id,
+        pergunta_id=pergunta.id,
+        tipo_pergunta=categoria,
+        resposta_usuario="",
+        pontos_obtidos=0,
+        feedback=None
+    ) for pergunta in perguntas]
 
-# ======================================================
-#               ENTREVISTA CONSULAR
-# ======================================================
-@router.get("/entrevista", response_model=List[schemas.PerguntaEntrevistaResposta])
-def listar_entrevista(
-    gratuito: Optional[bool] = None,
-    categoria: Optional[str] = None,
-    db: Session = Depends(get_db)
-):
-    """
-    Lista perguntas da entrevista consular (gratuitas / premium / por categoria)
-    """
-    return PerguntasService.listar_entrevista(db, gratuito, categoria)
-
-
-# ======================================================
-#                     ESTATÍSTICAS
-# ======================================================
-@router.get("/stats")
-def estatisticas_perguntas(db: Session = Depends(get_db)):
-    """
-    Estatísticas gerais das perguntas: total, gratuitas, premium.
-    """
-    return PerguntasService.estatisticas(db)

@@ -1,124 +1,96 @@
 # app/services/pagamentos_service.py
-import os
-from datetime import datetime, timedelta
-from typing import Optional
 
 import stripe
-from sqlalchemy.orm import Session
 from fastapi import HTTPException
+from sqlalchemy.orm import Session
+from datetime import datetime, timedelta
 
+from app.core.config import settings
 from app import models
+from app.services.usuarios_service import usuarios_service
 
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
+# Configura a chave secreta do Stripe
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 class PagamentosService:
-    """
-    Serviço para lidar com Stripe Checkout e ativação de plano Premium.
-    """
 
-    def __init__(self):
-        # permite sobrescrever price_id via env
-        self.default_price_id = os.getenv("STRIPE_PRICE_ID")
-
+    # =====================================================
+    # 1) CRIAR CHECKOUT SESSION
+    # =====================================================
     def criar_checkout_session(
         self,
         customer_email: str,
         success_url: str,
         cancel_url: str,
-        price_id: Optional[str] = None,
-        quantity: int = 1,
-    ) -> dict:
-        """
-        Cria uma sessão de checkout no Stripe e retorna a URL de checkout.
-        """
-        price = price_id or self.default_price_id
-        if not price:
-            raise HTTPException(
-                status_code=500,
-                detail="Nenhum price_id foi configurado (STRIPE_PRICE_ID) e nenhum price_id foi enviado."
-            )
-
+        price_id: str,
+        quantity: int = 1
+    ):
         try:
             session = stripe.checkout.Session.create(
-                customer_email=customer_email,
                 payment_method_types=["card"],
+                line_items=[{
+                    "price": price_id,
+                    "quantity": quantity
+                }],
                 mode="payment",
-                line_items=[{"price": price, "quantity": quantity}],
+                customer_email=customer_email,
                 success_url=success_url,
-                cancel_url=cancel_url,
+                cancel_url=cancel_url
             )
-            return {"url": session.url, "id": session.id}
+            return {"checkout_url": session.url}
+
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Erro ao criar sessão Stripe: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Erro ao criar checkout: {str(e)}")
 
-    def ativar_premium_por_email(self, db: Session, email: str, dias: int = 365 * 1) -> models.Usuario:
-        """
-        Ativa o plano premium para um usuário identificado pelo email.
-        Define data_expiracao_premium para 'dias' dias a partir de agora.
-        """
-        usuario = db.query(models.Usuario).filter(models.Usuario.email == email).first()
-        if not usuario:
-            raise HTTPException(status_code=404, detail="Usuário não encontrado")
-
-        usuario.tipo_plano = "premium"
-        usuario.data_expiracao_premium = datetime.utcnow() + timedelta(days=dias)
-        db.commit()
-        db.refresh(usuario)
-        return usuario
-
-    def ativar_premium_por_id(self, db: Session, usuario_id: int, dias: int = 365 * 1) -> models.Usuario:
-        usuario = db.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
-        if not usuario:
-            raise HTTPException(status_code=404, detail="Usuário não encontrado")
-
-        usuario.tipo_plano = "premium"
-        usuario.data_expiracao_premium = datetime.utcnow() + timedelta(days=dias)
-        db.commit()
-        db.refresh(usuario)
-        return usuario
-
+    # =====================================================
+    # 2) PROCESSAR WEBHOOK DO STRIPE
+    # =====================================================
     def processar_webhook(self, payload: bytes, sig_header: str, db: Session):
-        """
-        Valida e processa eventos do Stripe (p.ex. checkout.session.completed).
-        Retorna dict com status e detalhes.
-        """
-        webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
-        if not webhook_secret:
-            raise HTTPException(status_code=500, detail="STRIPE_WEBHOOK_SECRET não configurado")
-
         try:
-            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
-        except stripe.error.SignatureVerificationError as e:
-            raise HTTPException(status_code=400, detail=f"Assinatura inválida: {str(e)}")
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Erro ao interpretar webhook: {str(e)}")
+            evento = stripe.Webhook.construct_event(
+                payload=payload,
+                sig_header=sig_header,
+                secret=settings.STRIPE_WEBHOOK_SECRET
+            )
+        except Exception:
+            raise HTTPException(status_code=400, detail="Webhook inválido")
 
-        # Processar tipos de evento que interessam
-        if event["type"] == "checkout.session.completed":
-            session = event["data"]["object"]  # tipo: dict
-            # Obter o e-mail do cliente
-            customer_email = (session.get("customer_details") or {}).get("email")
-            # Em alguns setups o email fica em customer_email, tente também:
-            if not customer_email:
-                customer_email = session.get("customer_email")
+        # --------------------------
+        # Pagamento concluído
+        # --------------------------
+        if evento["type"] == "checkout.session.completed":
+            dados = evento["data"]["object"]
 
-            if customer_email:
-                # Ativar premium (padrão 1 ano) -- ajustar conforme plano/metadata
-                usuario = db.query(models.Usuario).filter(models.Usuario.email == customer_email).first()
+            email = dados.get("customer_email")
+            if email:
+                usuario = usuarios_service.buscar_por_email(db, email)
                 if usuario:
                     usuario.tipo_plano = "premium"
-                    # se quiser usar metadata para dias:
-                    dias = 365
-                    # exemplo: if session.get("metadata") and session["metadata"].get("period_days"): ...
-                    usuario.data_expiracao_premium = datetime.utcnow() + timedelta(days=dias)
+                    usuario.data_expiracao_premium = datetime.utcnow() + timedelta(days=30)
+
                     db.commit()
-                    return {"status": "ok", "mensagem": f"Usuário {customer_email} atualizado para premium via webhook."}
-                else:
-                    return {"status": "warning", "mensagem": "Pagamento recebido, mas usuário não encontrado."}
-        # Retorne success para outros eventos ou não processados
-        return {"status": "ignored", "tipo_evento": event["type"]}
+                    db.refresh(usuario)
+
+        return {"status": "ok"}
+
+    # =====================================================
+    # 3) ATIVAÇÃO MANUAL (ADMIN)
+    # =====================================================
+    def ativar_premium_por_id(self, db: Session, usuario_id: int):
+        usuario = db.query(models.Usuario).filter(models.Usuario.id == usuario_id).first()
+
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+        usuario.tipo_plano = "premium"
+        usuario.data_expiracao_premium = None  # vitalício
+
+        db.commit()
+        db.refresh(usuario)
+
+        return usuario
 
 
-# instância
+# Instância padrão (igual outros services)
 pagamentos_service = PagamentosService()

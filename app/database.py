@@ -5,30 +5,25 @@ from app.core.config import settings
 
 # ============================================================
 # DEFINIR DATABASE_URL — PRIORIDADE:
-# 1) PostgreSQL do Railway (.env)
+# 1) Railway (PostgreSQL)
 # 2) SQLite local como fallback
 # ============================================================
 
 DATABASE_URL = settings.DATABASE_URL
 
 if not DATABASE_URL or DATABASE_URL.strip() == "":
-    # SQLite local como fallback seguro
     DATABASE_URL = "sqlite:///./local.db"
 
 # ============================================================
-# ENGINE
-# Configuração automática dependendo do tipo de banco
+# ENGINE (configuração automática)
 # ============================================================
 
-# Caso seja SQLite ------------------------------
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(
         DATABASE_URL,
-        connect_args={"check_same_thread": False},  # obrigatório no SQLite
+        connect_args={"check_same_thread": False},
         pool_pre_ping=True
     )
-
-# Caso seja PostgreSQL --------------------------
 else:
     engine = create_engine(
         DATABASE_URL,
@@ -49,22 +44,20 @@ SessionLocal = sessionmaker(
 )
 
 # ============================================================
-# BASE
+# BASE ORM
 # ============================================================
 
 Base = declarative_base()
 
 # ============================================================
-# INIT DB — usado pelo create_app()
+# INIT DB — CRIA AS TABELAS AUTOMATICAMENTE
 # ============================================================
 
 def init_db():
     """
-    Cria as tabelas automaticamente no banco.
-    - Em produção: PostgreSQL (Railway)
-    - Em desenvolvimento: SQLite local
+    Garante que todos os models são importados e criados no banco.
     """
-    import app.models  # garante que os models sejam carregados
+    import app.models  # NECESSÁRIO: força carregamento dos models
     Base.metadata.create_all(bind=engine)
 
 # ============================================================

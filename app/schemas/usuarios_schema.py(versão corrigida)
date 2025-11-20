@@ -1,22 +1,19 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 
-
 class UsuarioBase(BaseModel):
     email: EmailStr
 
-
 class UsuarioCreate(UsuarioBase):
     senha: str
-
 
 class UsuarioUpdate(BaseModel):
     email: Optional[EmailStr] = None
     senha: Optional[str] = None
 
-
 class UsuarioResponse(UsuarioBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }

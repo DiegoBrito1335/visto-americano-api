@@ -14,13 +14,14 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # ======================================================
 # HASH DE SENHA
 # ======================================================
+# Configuração para usar tanto bcrypt quanto argon2
+pwd_context = CryptContext(schemes=["bcrypt", "argon2"], deprecated="auto")
+
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
-
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
-
 
 # ======================================================
 # GERAÇÃO DE TOKENS

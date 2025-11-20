@@ -1,24 +1,15 @@
-# Usuarios
-from .usuarios_schema import (
-    UsuarioBase,
-    UsuarioCreate,
-    UsuarioResponse,
-)
-
-# Auth
 from .auth_schema import LoginSchema
-
-# Perguntas
+from .usuarios_schema import UsuarioCreate, UsuarioResponse
+from .pagamentos_schema import PagamentoCreate, PagamentoResponse
+from .pdf_schema import PDFRequest
 from .perguntas_schema import (
     PerguntaDS160Resposta,
     PerguntaEntrevistaResposta,
 )
-
-# Tentativas
 from .tentativas_schema import (
-    TentativaCriar,
+    TentativaCreate,
     TentativaResposta,
-    TentativaHistoricoItem,
-    TentativaDetalhe,
+    RespostaCreate,
+    RespostaResposta,
     TentativaComparacao,
 )

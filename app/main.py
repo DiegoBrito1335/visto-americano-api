@@ -2,9 +2,9 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from app.core.config import settings
-from app.routers import auth, usuarios, perguntas, tentativas, pagamentos, pdf
+from app.routers import auth, tentativas, usuarios, perguntas, pagamentos, pdf
+from app.database import init_db
 
 
 def build_cors_list():
@@ -32,15 +32,22 @@ def build_cors_list():
     origins.add("http://localhost:3000")
     origins.add("http://127.0.0.1:3000")
 
-    # Railway e Render podem usar portas aleatórias — deixar aberto no DEV
+    # Railway/Render — opcional abrir tudo no desenvolvimento
     if settings.ENVIRONMENT == "development":
-        origins.add("*")  # OPCIONAL: abre tudo durante desenvolvimento
+        origins.add("*")
 
     return list(origins)
 
 
 def create_app():
     app = FastAPI(title=settings.APP_NAME)
+
+    # ====================================================
+    # DATABASE INIT (CORREÇÃO CRÍTICA)
+    # ====================================================
+    @app.on_event("startup")
+    def startup_event():
+        init_db()  # 🔥 GARANTE QUE AS TABELAS EXISTEM
 
     # ====================================================
     # CORS

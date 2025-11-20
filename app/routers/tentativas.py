@@ -5,8 +5,14 @@ from typing import List
 from app.database import get_db
 from app.core.security import get_current_user
 from app.services.tentativas_service import TentativasService
+from app.schemas.tentativas_schema import (
+    TentativaCreate,
+    TentativaResposta,
+    TentativaComparacao,
+    TentativaHistoricoItem,
+    TentativaDetalhe,
+)
 from app import models
-from app.schemas import tentativas_schema as schemas
 
 router = APIRouter(
     prefix="/tentativas",
@@ -14,29 +20,25 @@ router = APIRouter(
 )
 
 
-@router.get("/estatisticas/comparacao", response_model=schemas.TentativaComparacao)
-def comparar_tentativas(
+# ============================================================
+#          REGISTRAR TENTATIVA
+# ============================================================
+
+@router.post("/", response_model=TentativaResposta)
+def registrar_tentativa(
+    dados: TentativaCreate,
     db: Session = Depends(get_db),
     usuario: models.Usuario = Depends(get_current_user)
 ):
-    stats = TentativasService.comparar_tentativas(db, usuario.id)
-
-    if not stats:
-        raise HTTPException(status_code=404, detail="Nenhuma tentativa encontrada")
-
-    return stats
+    tentativa = TentativasService.registrar_tentativa_com_usuario(db, dados, usuario.id)
+    return tentativa
 
 
-@router.post("/avaliar", response_model=schemas.TentativaResposta)
-def avaliar_tentativa(
-    dados: schemas.TentativaCriar,
-    db: Session = Depends(get_db),
-    usuario: models.Usuario = Depends(get_current_user)
-):
-    return TentativasService.avaliar_respostas(db, dados, usuario)
+# ============================================================
+#          HISTÓRICO DO USUÁRIO
+# ============================================================
 
-
-@router.get("/historico", response_model=List[schemas.TentativaHistoricoItem])
+@router.get("/historico", response_model=List[TentativaHistoricoItem])
 def listar_historico(
     limite: int = 50,
     tipo: str | None = None,
@@ -46,7 +48,11 @@ def listar_historico(
     return TentativasService.listar_historico(db, usuario.id, limite, tipo)
 
 
-@router.get("/{tentativa_id}", response_model=schemas.TentativaDetalhe)
+# ============================================================
+#          DETALHE DA TENTATIVA
+# ============================================================
+
+@router.get("/{tentativa_id}", response_model=TentativaDetalhe)
 def detalhe_tentativa(
     tentativa_id: int,
     db: Session = Depends(get_db),
@@ -60,6 +66,10 @@ def detalhe_tentativa(
     return tentativa
 
 
+# ============================================================
+#          DELETAR TENTATIVA
+# ============================================================
+
 @router.delete("/{tentativa_id}")
 def deletar_tentativa(
     tentativa_id: int,
@@ -72,3 +82,15 @@ def deletar_tentativa(
         raise HTTPException(status_code=404, detail="Tentativa não encontrada")
 
     return {"mensagem": "Tentativa deletada com sucesso", "success": True}
+
+
+# ============================================================
+#          ESTATÍSTICAS / COMPARAÇÃO
+# ============================================================
+
+@router.get("/estatisticas/comparacao", response_model=TentativaComparacao)
+def comparar_tentativas(
+    db: Session = Depends(get_db),
+    usuario: models.Usuario = Depends(get_current_user)
+):
+    return TentativasService.estatisticas_comparacao(db)
