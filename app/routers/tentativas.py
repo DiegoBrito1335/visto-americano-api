@@ -1,19 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from typing import List
 
 from app.database import get_db
 from app.core.security import get_current_user
 from app.services.tentativas_service import TentativasService
-from app import schemas, models
+from app import models
+from app.schemas import tentativas_schema as schemas
 
 router = APIRouter(
     prefix="/tentativas",
     tags=["Tentativas"]
 )
 
-# =============================================================
-# COMPARAÇÃO (rota fixa — antes das rotas com path dinâmico)
-# =============================================================
+
 @router.get("/estatisticas/comparacao", response_model=schemas.TentativaComparacao)
 def comparar_tentativas(
     db: Session = Depends(get_db),
@@ -27,9 +27,6 @@ def comparar_tentativas(
     return stats
 
 
-# =============================================================
-# AVALIAR TENTATIVA
-# =============================================================
 @router.post("/avaliar", response_model=schemas.TentativaResposta)
 def avaliar_tentativa(
     dados: schemas.TentativaCriar,
@@ -39,10 +36,7 @@ def avaliar_tentativa(
     return TentativasService.avaliar_respostas(db, dados, usuario)
 
 
-# =============================================================
-# LISTAR HISTÓRICO
-# =============================================================
-@router.get("/historico", response_model=list[schemas.TentativaHistoricoItem])
+@router.get("/historico", response_model=List[schemas.TentativaHistoricoItem])
 def listar_historico(
     limite: int = 50,
     tipo: str | None = None,
@@ -52,9 +46,6 @@ def listar_historico(
     return TentativasService.listar_historico(db, usuario.id, limite, tipo)
 
 
-# =============================================================
-# DETALHE DA TENTATIVA
-# =============================================================
 @router.get("/{tentativa_id}", response_model=schemas.TentativaDetalhe)
 def detalhe_tentativa(
     tentativa_id: int,
@@ -69,9 +60,6 @@ def detalhe_tentativa(
     return tentativa
 
 
-# =============================================================
-# DELETAR
-# =============================================================
 @router.delete("/{tentativa_id}")
 def deletar_tentativa(
     tentativa_id: int,
@@ -83,5 +71,4 @@ def deletar_tentativa(
     if not ok:
         raise HTTPException(status_code=404, detail="Tentativa não encontrada")
 
-    return {"mensagem": "Tentativa deletada com sucesso"}
-
+    return {"mensagem": "Tentativa deletada com sucesso", "success": True}

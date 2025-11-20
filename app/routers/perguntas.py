@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.database import get_db
-from app import schemas
+from app.schemas import perguntas_schema as schemas
 from app.services.perguntas_service import PerguntasService
 
 router = APIRouter(
@@ -50,4 +50,3 @@ def estatisticas_perguntas(db: Session = Depends(get_db)):
     Estatísticas gerais das perguntas: total, gratuitas, premium.
     """
     return PerguntasService.estatisticas(db)
-

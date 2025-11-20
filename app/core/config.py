@@ -2,36 +2,62 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # Informações gerais
+    # ======================================================
+    # INFORMAÇÕES GERAIS
+    # ======================================================
     APP_NAME: str = "Visto Americano API"
 
+    # ======================================================
     # JWT
-    SECRET_KEY: str
+    # ======================================================
+    SECRET_KEY: str                  # Obrigatório no .env
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
-    # Banco de dados
-    DATABASE_URL: str
+    # ======================================================
+    # BANCO DE DADOS
+    # ======================================================
+    # Fallback SQLite para ambiente local
+    DATABASE_URL: str = "sqlite:///./local.db"
 
-    # Stripe
-    STRIPE_SECRET_KEY: str
-    STRIPE_PUBLISHABLE_KEY: str
-    STRIPE_WEBHOOK_SECRET: str
-    STRIPE_PRICE_ID: str
+    # ======================================================
+    # STRIPE
+    # ======================================================
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_PUBLISHABLE_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_PRICE_ID: str = ""
 
-    # Pagamento interno
-    PRECO_PREMIUM: int = 7990  # centavos
+    # ======================================================
+    # PAGAMENTO INTERNO
+    # ======================================================
+    PRECO_PREMIUM: int = 7990  # Em centavos (R$ 79,90)
 
-    # Ambiente
-    ENVIRONMENT: str = "development"
+    # ======================================================
+    # AMBIENTE
+    # ======================================================
+    ENVIRONMENT: str = "development"  # development | production
 
-    # URLs
-    FRONTEND_URL: str
-    BACKEND_URL: str
+    # ======================================================
+    # URLs DO SISTEMA
+    # ======================================================
+    FRONTEND_URL: str = "http://localhost:3000"
+    BACKEND_URL: str = "http://localhost:8000"
 
     class Config:
         env_file = ".env"
-        extra = "allow"  # <-- permite futuras variáveis sem quebrar
+        extra = "allow"  # Permite variáveis adicionais no .env sem erro
+
+    # ------------------------------------------------------
+    # PROPRIEDADES PARA COMPATIBILIDADE (opcional)
+    # ------------------------------------------------------
+    @property
+    def JWT_SECRET(self):
+        return self.SECRET_KEY
+
+    @property
+    def JWT_ALGORITHM(self):
+        return self.ALGORITHM
 
 
 settings = Settings()

@@ -1,11 +1,13 @@
 # app/routers/pagamentos.py
+
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
-import os
+from typing import Optional
 
 from app.database import get_db
 from app.core.security import get_current_user
+from app.core.config import settings
 from app.services.pagamentos_service import pagamentos_service
 from app import models
 
@@ -14,46 +16,59 @@ router = APIRouter(
     tags=["Pagamentos"]
 )
 
+# ======================================================
+# MODELO DE REQUEST PARA CHECKOUT
+# ======================================================
+
 class CreateSessionRequest(BaseModel):
     success_url: str
     cancel_url: str
-    price_id: str | None = None
+    price_id: Optional[str] = None
     quantity: int = 1
-    email: EmailStr | None = None
+    email: Optional[EmailStr] = None
 
 
 # ======================================================
 # CRIAR CHECKOUT (CLIENTE)
 # ======================================================
+
 @router.post("/create-session")
-def create_checkout_session(data: CreateSessionRequest, db: Session = Depends(get_db)):
+def create_checkout_session(
+    data: CreateSessionRequest,
+    db: Session = Depends(get_db)
+):
     """
     Cria uma sessão de checkout no Stripe.
     O frontend deve redirecionar o usuário para a URL retornada.
     """
 
     if not data.email:
-        raise HTTPException(status_code=400, detail="Email do cliente é obrigatório")
+        raise HTTPException(status_code=400, detail="Email é obrigatório para o checkout")
 
-    price_id = data.price_id or os.getenv("STRIPE_PRICE_ID")
+    # Carrega o preço do Stripe de forma centralizada (settings)
+    price_id = data.price_id or settings.STRIPE_PRICE_ID
+
+    if not price_id:
+        raise HTTPException(status_code=500, detail="Stripe PRICE_ID não configurado")
 
     return pagamentos_service.criar_checkout_session(
         customer_email=data.email,
         success_url=data.success_url,
         cancel_url=data.cancel_url,
         price_id=price_id,
-        quantity=data.quantity
+        quantity=data.quantity,
+        db=db
     )
 
 
 # ======================================================
 # WEBHOOK DO STRIPE (PÚBLICO)
 # ======================================================
+
 @router.post("/webhook")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     """
-    Webhook do Stripe — recebe eventos como pagamento aprovado,
-    cancelado ou expirado.
+    Webhook — recebe eventos do Stripe.
     """
 
     payload = await request.body()
@@ -62,35 +77,38 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     if not sig_header:
         raise HTTPException(status_code=400, detail="Cabeçalho stripe-signature ausente")
 
-    return pagamentos_service.processar_webhook(payload, sig_header, db)
+    return pagamentos_service.processar_webhook(
+        payload=payload,
+        signature=sig_header,
+        db=db
+    )
 
 
 # ======================================================
-# ATIVAÇÃO MANUAL (ADMIN)
+# ATIVAÇÃO MANUAL (ADMIN/DEBUG)
 # ======================================================
+
 @router.post("/ativar/{usuario_id}")
 def ativar_manual(
     usuario_id: int,
-    db: Session = Depends(get_db),
-    current_user: models.Usuario = Depends(get_current_user)
+    current_user: models.Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """
-    Ativa premium manualmente (rota protegida).
-    Útil para admin/testes.
+    Ativa premium manualmente (somente para admin / testes).
     """
 
-    # EXEMPLO:
+    # Exemplo para futuro:
     # if not current_user.is_admin:
-    #     raise HTTPException(status_code=403, detail="Acesso negado")
+    #    raise HTTPException(status_code=403, detail="Acesso negado")
 
     usuario = pagamentos_service.ativar_premium_por_id(db, usuario_id)
 
     return {
-        "mensagem": "Usuário tornado premium (manual).",
+        "mensagem": "Usuário tornado premium manualmente.",
         "usuario": {
             "id": usuario.id,
             "email": usuario.email,
             "plano": usuario.tipo_plano
         }
     }
-

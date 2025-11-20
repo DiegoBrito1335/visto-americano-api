@@ -1,28 +1,60 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
-from datetime import timedelta
 
 from app.database import get_db
-from app.core.security import create_access_token, verify_password
+from app.schemas.auth_schema import LoginSchema
+from app.core.security import (
+    create_access_token,
+    create_refresh_token
+)
+from app.core.config import settings
 from app.services.usuarios_service import usuarios_service
-from app.schemas import UsuarioLogin, Token
 
 router = APIRouter(
     prefix="/auth",
     tags=["Autenticação"]
 )
 
-@router.post("/login", response_model=Token, name="login")
-def login(dados: UsuarioLogin, db: Session = Depends(get_db)):
 
-    usuario = usuarios_service.autenticar(db, dados.email, dados.senha)
+@router.post("/login")
+def login(data: LoginSchema, response: Response, db: Session = Depends(get_db)):
+    usuario = usuarios_service.autenticar(db, data.email, data.senha)
 
     if not usuario:
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
 
-    token = create_access_token(
-        data={"sub": usuario.email},
-        expires_delta=timedelta(minutes=60)
+    # ======================================================
+    # CRIAÇÃO DOS TOKENS
+    # ======================================================
+    access_token = create_access_token({"sub": usuario.email})
+    refresh_token = create_refresh_token({"sub": usuario.email})
+
+    # ======================================================
+    # Configurações de cookie dinâmicas
+    # ======================================================
+    is_prod = settings.ENVIRONMENT == "production"
+
+    response.set_cookie(
+        key="access_token",          # 🔥 CORRETO — compatível com security.py
+        value=access_token,
+        httponly=True,
+        secure=is_prod,
+        samesite="None" if is_prod else "Lax"
     )
 
-    return {"access_token": token, "token_type": "bearer"}
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=is_prod,
+        samesite="None" if is_prod else "Lax"
+    )
+
+    return {
+        "mensagem": "Login efetuado com sucesso",
+        "usuario": {
+            "id": usuario.id,
+            "email": usuario.email
+        },
+        "access_token": access_token  # útil para mobile e testes
+    }

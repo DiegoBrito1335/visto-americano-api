@@ -1,81 +1,119 @@
-"""
-Sistema de autenticação com JWT usando Bearer Token (correto para Swagger)
-"""
-
 from datetime import datetime, timedelta
-from typing import Optional
-from jose import JWTError, jwt
+from jose import jwt, JWTError, ExpiredSignatureError
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
-from app.database import get_db
-from app.models import Usuario
 from app.core.config import settings
+from app.database import get_db
+from app import models
 
-# ===============================
-# CONFIGURAÇÕES
-# ===============================
-SECRET_KEY = settings.SECRET_KEY
-ALGORITHM = settings.ALGORITHM
-ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
-
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
-
-# Agora usando Bearer Token (CORRETO!)
-bearer_scheme = HTTPBearer()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-# ===============================
-# SENHA
-# ===============================
-def hash_password(senha: str) -> str:
-    return pwd_context.hash(senha)
+# ======================================================
+# HASH DE SENHA
+# ======================================================
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
 
 
-def verify_password(senha_plana: str, senha_hash: str) -> bool:
-    return pwd_context.verify(senha_plana, senha_hash)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
 
 
-# ===============================
-# TOKEN
-# ===============================
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+# ======================================================
+# GERAÇÃO DE TOKENS
+# ======================================================
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
 
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    to_encode.update({
+        "exp": expire,
+        "iat": datetime.utcnow()
+    })
 
-
-# ===============================
-# USUÁRIO ATUAL (Bearer Token)
-# ===============================
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
-    db: Session = Depends(get_db)
-) -> Usuario:
-
-    token = credentials.credentials
-
-    cred_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Não foi possível validar as credenciais.",
-        headers={"WWW-Authenticate": "Bearer"},
+    return jwt.encode(
+        to_encode,
+        settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM
     )
 
+
+def create_refresh_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+
+    expire = datetime.utcnow() + (expires_delta or timedelta(days=30))
+    to_encode.update({
+        "exp": expire,
+        "iat": datetime.utcnow()
+    })
+
+    return jwt.encode(
+        to_encode,
+        settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM
+    )
+
+
+# ======================================================
+# DECODIFICA TOKEN
+# ======================================================
+def decode_token(token: str):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise cred_exception
+        return jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM]
+        )
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expirado")
     except JWTError:
-        raise cred_exception
+        raise HTTPException(status_code=401, detail="Token inválido")
 
-    usuario = db.query(Usuario).filter(Usuario.email == email).first()
 
-    if usuario is None:
-        raise cred_exception
+# ======================================================
+# EXTRAI TOKEN DA REQUEST (COOKIE OU BEARER)
+# ======================================================
+def get_token_from_request(request: Request) -> str | None:
+    """
+    Tenta obter token em:
+    1. Cookie HttpOnly: access_token
+    2. Authorization: Bearer <token>
+    """
 
-    return usuario
+    # 1 — Cookie access_token (o correto)
+    access_cookie = request.cookies.get("access_token")
+    if access_cookie:
+        return access_cookie
+
+    # 2 — Header Authorization
+    auth = request.headers.get("Authorization")
+    if auth and auth.startswith("Bearer "):
+        return auth.removeprefix("Bearer ")
+
+    return None
+
+
+# ======================================================
+# OBTÉM USUÁRIO ATUAL A PARTIR DO TOKEN
+# ======================================================
+def get_current_user(request: Request, db: Session = Depends(get_db)):
+    token = get_token_from_request(request)
+
+    if not token:
+        raise HTTPException(status_code=401, detail="Não autenticado")
+
+    payload = decode_token(token)
+
+    email = payload.get("sub")
+    if not email:
+        raise HTTPException(status_code=401, detail="Token sem usuário")
+
+    user = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+    return user
