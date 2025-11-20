@@ -47,3 +47,7 @@ out/
 # misc
 *.bak
 *.tmp
+
+# Artefatos fantasmas do Windows
+# Python/
+
