@@ -1,40 +1,39 @@
 """
-Script para atualizar usuário para Premium
-Execute: python atualizar_premium.py
+Script para ativar plano Premium em usuário
+Uso: python maintenance/activate_premium.py
 """
+
+import sys
+from pathlib import Path
+
+# Adicionar raiz ao path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.database import SessionLocal
 from app.models import Usuario
 
-def listar_usuarios(db):
-    """Lista usuários disponíveis"""
-    usuarios = db.query(Usuario).all()
-    
-    if not usuarios:
-        print("❌ Nenhum usuário encontrado!")
-        return None
-    
-    print("\n" + "=" * 60)
-    print("👥 USUÁRIOS DISPONÍVEIS")
-    print("=" * 60)
-    
-    for i, user in enumerate(usuarios, 1):
-        status = "⭐ PREMIUM" if user.tipo_plano == "premium" else "🆓 GRATUITO"
-        print(f"{i}. {user.email} - {status}")
-    
-    print("=" * 60)
-    return usuarios
 
-
-def atualizar_para_premium():
+def activate_premium():
     """Atualiza usuário para plano Premium"""
     db = SessionLocal()
     
     try:
-        usuarios = listar_usuarios(db)
+        # Listar usuários
+        usuarios = db.query(Usuario).all()
         
         if not usuarios:
+            print("\n❌ Nenhum usuário encontrado!")
             return
+        
+        print("\n" + "=" * 60)
+        print("👥 USUÁRIOS DISPONÍVEIS")
+        print("=" * 60)
+        
+        for i, user in enumerate(usuarios, 1):
+            status = "⭐ PREMIUM" if user.tipo_plano == "premium" else "🆓 GRATUITO"
+            print(f"{i}. {user.email} - {status}")
+        
+        print("=" * 60)
         
         # Solicitar escolha
         escolha = input("\n Digite o número do usuário para tornar PREMIUM (ou 0 para sair): ")
@@ -82,12 +81,14 @@ def atualizar_para_premium():
             return
         
     except Exception as e:
-        print(f"❌ Erro: {e}")
+        print(f"\n❌ Erro: {e}")
         db.rollback()
+        import traceback
+        traceback.print_exc()
     finally:
         db.close()
 
 
 if __name__ == "__main__":
     print("\n🚀 ATUALIZAR USUÁRIO PARA PREMIUM")
-    atualizar_para_premium()
+    activate_premium()
