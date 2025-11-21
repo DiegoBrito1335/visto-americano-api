@@ -1,63 +1,90 @@
-from pydantic_settings import BaseSettings
+"""
+Configurações da aplicação
+"""
+import os
+from typing import Optional
 
 
-class Settings(BaseSettings):
-    # ======================================================
-    # INFORMAÇÕES GERAIS
-    # ======================================================
-    APP_NAME: str = "Visto Americano API"
-
-    # ======================================================
-    # JWT
-    # ======================================================
-    SECRET_KEY: str                  # Obrigatório no .env
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
-
-    # ======================================================
+class Settings:
+    """Configurações da aplicação"""
+    
+    # ============================================
     # BANCO DE DADOS
-    # ======================================================
-    # Fallback SQLite para ambiente local
-    DATABASE_URL: str = "sqlite:///./local.db"
+    # ============================================
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL", 
+        os.getenv("URL_DO_BANCO_DE_DADOS", "sqlite:///./visto_local.db")
+    )
+    
+    # ============================================
+    # JWT / Segurança
+    # ============================================
+    SECRET_KEY: str = os.getenv(
+        "SECRET_KEY",
+        os.getenv("CHAVE_SECRETA", "sua-chave-secreta-aqui")
+    )
+    
+    ALGORITHM: str = os.getenv(
+        "ALGORITHM",
+        os.getenv("ALGORITMO", "HS256")
+    )
+    
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv(
+        "ACCESS_TOKEN_EXPIRE_MINUTES",
+        os.getenv("MINUTOS_EXPIRACAO_TOKEN", "30")
+    ))
+    
+    # ============================================
+    # STRIPE - PAGAMENTOS
+    # ============================================
+    STRIPE_SECRET_KEY: str = os.getenv(
+        "STRIPE_SECRET_KEY",
+        os.getenv("CHAVE_SECRETA_STRIPE", "")
+    )
+    
+    STRIPE_PUBLISHABLE_KEY: str = os.getenv(
+        "STRIPE_PUBLISHABLE_KEY",
+        os.getenv("CHAVE_PUBLICA_STRIPE", "")
+    )
+    
+    STRIPE_WEBHOOK_SECRET: str = os.getenv(
+        "STRIPE_WEBHOOK_SECRET",
+        os.getenv("SEGREDO_WEBHOOK_STRIPE", "")
+    )
+    
+    STRIPE_PRICE_ID: str = os.getenv(
+        "STRIPE_PRICE_ID",
+        os.getenv("ID_PRECO_STRIPE", "")
+    )
+    
+    PRECO_PREMIUM: int = int(os.getenv(
+        "PRECO_PREMIUM",
+        "7990"
+    ))
+    
+    # ============================================
+    # URLs
+    # ============================================
+    FRONTEND_URL: str = os.getenv(
+        "FRONTEND_URL",
+        os.getenv("URL_FRONTEND", "http://localhost:3000")
+    )
+    
+    BACKEND_URL: str = os.getenv(
+        "BACKEND_URL",
+        os.getenv("URL_DE_ACKEND", "http://localhost:8000")
+    )
+    
+    # ============================================
+    # CORS - Origens permitidas
+    # ============================================
+    ALLOWED_ORIGINS: list = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://aprovavistoamericano.com.br",
+        "https://www.aprovavistoamericano.com.br",
+    ]
 
-    # ======================================================
-    # STRIPE
-    # ======================================================
-    STRIPE_SECRET_KEY: str = ""
-    STRIPE_PUBLISHABLE_KEY: str = ""
-    STRIPE_WEBHOOK_SECRET: str = ""
-    STRIPE_PRICE_ID: str = ""
 
-    # ======================================================
-    # PAGAMENTO INTERNO
-    # ======================================================
-    PRECO_PREMIUM: int = 7990  # Em centavos (R$ 79,90)
-
-    # ======================================================
-    # AMBIENTE
-    # ======================================================
-    ENVIRONMENT: str = "development"  # development | production
-
-    # ======================================================
-    # URLs DO SISTEMA
-    # ======================================================
-    FRONTEND_URL: str = "http://localhost:3000"
-    BACKEND_URL: str = "http://localhost:8000"
-
-    class Config:
-        env_file = ".env"
-        extra = "allow"  # Permite variáveis adicionais no .env sem erro
-
-    # ------------------------------------------------------
-    # PROPRIEDADES PARA COMPATIBILIDADE (opcional)
-    # ------------------------------------------------------
-    @property
-    def JWT_SECRET(self):
-        return self.SECRET_KEY
-
-    @property
-    def JWT_ALGORITHM(self):
-        return self.ALGORITHM
-
-
+# Instância única de configurações
 settings = Settings()
