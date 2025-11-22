@@ -10,7 +10,7 @@ from app.database import init_db
 def build_cors_list():
     """
     Monta dinamicamente a lista de origens permitidas.
-    Inclui automaticamente versões HTTP/HTTPS da FRONTEND_URL.
+    Inclui automaticamente versões HTTP/HTTPS e www/não-www da FRONTEND_URL.
     """
 
     origins = set()
@@ -27,17 +27,29 @@ def build_cors_list():
         if settings.FRONTEND_URL.startswith("https://"):
             http_version = settings.FRONTEND_URL.replace("https://", "http://")
             origins.add(http_version)
+        
+        # 🔥 ADICIONAR VERSÕES COM/SEM WWW
+        for origin in list(origins):
+            if "://www." in origin:
+                # Adicionar versão sem www
+                origins.add(origin.replace("://www.", "://"))
+            elif "://" in origin and "www." not in origin:
+                # Adicionar versão com www
+                origins.add(origin.replace("://", "://www."))
 
     # URLs para desenvolvimento
     origins.add("http://localhost:3000")
+    origins.add("http://localhost:3001")
     origins.add("http://127.0.0.1:3000")
+
+    # Domínios específicos do Vercel
+    origins.add("https://visto-americano-kvsqp896m-diego-santos-de-brito-s-projects.vercel.app")
 
     # Railway/Render — opcional abrir tudo no desenvolvimento
     if settings.ENVIRONMENT == "development":
         origins.add("*")
 
     return list(origins)
-
 
 def create_app():
     app = FastAPI(title=settings.APP_NAME)
@@ -81,6 +93,5 @@ def create_app():
         }
 
     return app
-
 
 app = create_app()
