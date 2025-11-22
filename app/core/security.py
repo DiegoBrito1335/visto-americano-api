@@ -15,12 +15,26 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # HASH DE SENHA
 # ======================================================
 # Configuração para usar tanto bcrypt quanto argon2
-pwd_context = CryptContext(schemes=["bcrypt", "argon2"], deprecated="auto")
-
 def hash_password(password: str) -> str:
+    """
+    Gera hash bcrypt da senha.
+    Trunca para 72 bytes se necessário (limite do bcrypt).
+    """
+    # Truncar para 72 bytes (limite bcrypt)
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        password = password_bytes[:72].decode('utf-8', errors='ignore')
+    
     return pwd_context.hash(password)
 
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verifica se a senha corresponde ao hash"""
+    # Truncar para 72 bytes (limite bcrypt)
+    password_bytes = plain_password.encode('utf-8')
+    if len(password_bytes) > 72:
+        plain_password = password_bytes[:72].decode('utf-8', errors='ignore')
+    
     return pwd_context.verify(plain_password, hashed_password)
 
 # ======================================================

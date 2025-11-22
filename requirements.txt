@@ -3,13 +3,11 @@ uvicorn[standard]==0.24.0
 sqlalchemy==2.0.23
 psycopg2-binary==2.9.9
 python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
+passlib==1.7.4
+bcrypt==4.0.1
 python-multipart==0.0.6
 pydantic==2.5.0
 pydantic-settings==2.1.0
-python-dotenv==1.0.0
-stripe==7.5.0
-gunicorn==21.2.0
-email-validator==2.1.0
+stripe==7.4.0
 reportlab==4.0.7
-argon2-cffi
+python-dotenv==1.0.0
