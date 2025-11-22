@@ -9,10 +9,10 @@ export function useAuth() {
 
   async function load() {
     try {
-      const res = await fetch(`${API}/usuarios/me`, {
+      const res = await fetch(`${API}/usuarios/me`, {  // 🔥 CORRIGIDO
         credentials: "include",
       });
-
+      
       if (res.ok) {
         const data: User = await res.json();
         setUser(data);
