@@ -13,6 +13,8 @@ class Settings:
     # ============================================
     APP_NAME: str = "Aprova Visto Americano API"
     VERSION: str = "1.0.0"
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    DEBUG: bool = os.getenv("ENVIRONMENT", "development") == "development"
     
     # ============================================
     # BANCO DE DADOS
