@@ -1,3 +1,7 @@
+"use client";
+
+// ... resto do código
+
 import { useAuth } from "@/hooks/useAuth";
 
 export default function DashboardPage() {
