@@ -9,6 +9,12 @@ class Settings:
     """Configurações da aplicação"""
     
     # ============================================
+    # APLICAÇÃO
+    # ============================================
+    APP_NAME: str = "Aprova Visto Americano API"
+    VERSION: str = "1.0.0"
+    
+    # ============================================
     # BANCO DE DADOS
     # ============================================
     DATABASE_URL: str = os.getenv(
