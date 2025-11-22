@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import type { User } from "@/types/User";
 
@@ -9,7 +11,7 @@ export function useAuth() {
 
   async function load() {
     try {
-      const res = await fetch(`${API}/usuarios/me`, {  // 🔥 CORRIGIDO
+      const res = await fetch(`${API}/usuarios/me`, {
         credentials: "include",
       });
       
