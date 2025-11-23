@@ -1,97 +1,61 @@
-# app/main.py
-
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from app.core.config import settings
-from app.routers import auth, tentativas, usuarios, perguntas, pagamentos, pdf
-from app.database import init_db
-
-
 def build_cors_list():
     """
     Monta dinamicamente a lista de origens permitidas.
-    Inclui automaticamente versões HTTP/HTTPS e www/não-www da FRONTEND_URL.
+    Suporta:
+    - URL principal do FRONTEND (produção)
+    - URL adicional (preview do Vercel)
+    - versões com/sem www
+    - versões http/https
     """
 
     origins = set()
 
-    # URL principal vinda do .env
+    # ================================
+    # ORIGEM PRINCIPAL DO FRONTEND
+    # ================================
     if settings.FRONTEND_URL:
-        origins.add(settings.FRONTEND_URL)
+        origins.add(settings.FRONTEND_URL.strip())
 
-        # Adicionar versões HTTP/HTTPS automaticamente
-        if settings.FRONTEND_URL.startswith("http://"):
-            https_version = settings.FRONTEND_URL.replace("http://", "https://")
-            origins.add(https_version)
+    # ================================
+    # ORIGEM ADICIONAL (PREVIEW VERCEL)
+    # ================================
+    if hasattr(settings, "CORS_ADDITIONAL_ORIGIN") and settings.CORS_ADDITIONAL_ORIGIN:
+        origins.add(settings.CORS_ADDITIONAL_ORIGIN.strip())
 
-        if settings.FRONTEND_URL.startswith("https://"):
-            http_version = settings.FRONTEND_URL.replace("https://", "http://")
-            origins.add(http_version)
-        
-        # 🔥 ADICIONAR VERSÕES COM/SEM WWW
-        for origin in list(origins):
-            if "://www." in origin:
-                # Adicionar versão sem www
-                origins.add(origin.replace("://www.", "://"))
-            elif "://" in origin and "www." not in origin:
-                # Adicionar versão com www
-                origins.add(origin.replace("://", "://www."))
+    # ================================
+    # Gerar variações com/sem www e http/https
+    # ================================
+    generated = set()
 
-    # URLs para desenvolvimento
-    origins.add("http://localhost:3000")
-    origins.add("http://localhost:3001")
-    origins.add("http://127.0.0.1:3000")
+    for origin in origins:
+        if origin.startswith("https://"):
+            generated.add(origin.replace("https://", "http://"))
+        if origin.startswith("http://"):
+            generated.add(origin.replace("http://", "https://"))
 
-    # Domínios específicos do Vercel
-    origins.add("https://visto-americano-kvsqp896m-diego-santos-de-brito-s-projects.vercel.app")
+        # adicionar versão www
+        if "://www." not in origin:
+            generated.add(origin.replace("://", "://www."))
+        # versão sem www
+        if "://www." in origin:
+            generated.add(origin.replace("://www.", "://"))
 
-    # Railway/Render — opcional abrir tudo no desenvolvimento
+    origins = origins.union(generated)
+
+    # ================================
+    # URLs usadas em desenvolvimento
+    # ================================
+    dev_allowed = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+    ]
+    origins.update(dev_allowed)
+
+    # ================================
+    # Ambiente de dev pode permitir tudo
+    # ================================
     if settings.ENVIRONMENT == "development":
         origins.add("*")
 
     return list(origins)
-
-def create_app():
-    app = FastAPI(title=settings.APP_NAME)
-
-    # ====================================================
-    # DATABASE INIT (CORREÇÃO CRÍTICA)
-    # ====================================================
-    @app.on_event("startup")
-    def startup_event():
-        init_db()  # 🔥 GARANTE QUE AS TABELAS EXISTEM
-
-    # ====================================================
-    # CORS
-    # ====================================================
-    allowed_origins = build_cors_list()
-
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=allowed_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    # ====================================================
-    # Rotas
-    # ====================================================
-    app.include_router(auth.router)
-    app.include_router(usuarios.router)
-    app.include_router(perguntas.router)
-    app.include_router(tentativas.router)
-    app.include_router(pagamentos.router)
-    app.include_router(pdf.router)
-
-    @app.get("/")
-    def root():
-        return {
-            "status": "online",
-            "environment": settings.ENVIRONMENT,
-            "allowed_origins": allowed_origins,
-        }
-
-    return app
-
-app = create_app()
