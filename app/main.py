@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.routers import auth, tentativas, usuarios, perguntas, pagamentos, pdf
@@ -26,7 +26,6 @@ def build_cors_list():
         generated.add(f"https://www.{base}")
         generated.add(f"http://www.{base}")
 
-    # Adiciona ao set final
     origins.update(generated)
 
     # Desenvolvimento
@@ -57,6 +56,13 @@ def create_app():
         allow_headers=["*"],
     )
 
+    # ============================
+    # HANDLER GLOBAL PARA OPTIONS
+    # ============================
+    @app.options("/{rest_of_path:path}")
+    async def preflight_handler(rest_of_path: str):
+        return Response(status_code=200)
+
     app.include_router(auth.router)
     app.include_router(usuarios.router)
     app.include_router(perguntas.router)
@@ -76,4 +82,5 @@ def create_app():
 
 
 app = create_app()
+
 

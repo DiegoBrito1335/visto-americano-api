@@ -15,6 +15,13 @@ router = APIRouter(
     tags=["Autenticação"]
 )
 
+# ==========================================
+# OPTIONS FIX — evita CORS 400
+# ==========================================
+@router.options("/login")
+def options_login():
+    return Response(status_code=200)
+
 
 @router.post("/login")
 def login(data: LoginSchema, response: Response, db: Session = Depends(get_db)):
@@ -23,19 +30,13 @@ def login(data: LoginSchema, response: Response, db: Session = Depends(get_db)):
     if not usuario:
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
 
-    # ======================================================
-    # CRIAÇÃO DOS TOKENS
-    # ======================================================
     access_token = create_access_token({"sub": usuario.email})
     refresh_token = create_refresh_token({"sub": usuario.email})
 
-    # ======================================================
-    # Configurações de cookie dinâmicas
-    # ======================================================
     is_prod = settings.ENVIRONMENT == "production"
 
     response.set_cookie(
-        key="access_token",          # 🔥 CORRETO — compatível com security.py
+        key="access_token",
         value=access_token,
         httponly=True,
         secure=is_prod,
@@ -56,5 +57,6 @@ def login(data: LoginSchema, response: Response, db: Session = Depends(get_db)):
             "id": usuario.id,
             "email": usuario.email
         },
-        "access_token": access_token  # útil para mobile e testes
+        "access_token": access_token
     }
+
