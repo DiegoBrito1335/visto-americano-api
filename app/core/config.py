@@ -1,98 +1,33 @@
-"""
-Configurações da aplicação
-"""
-import os
-from typing import Optional
+# app/core/config.py
 
+from pydantic_settings import BaseSettings
 
-class Settings:
-    """Configurações da aplicação"""
-    
-    # ============================================
-    # APLICAÇÃO
-    # ============================================
-    APP_NAME: str = "Aprova Visto Americano API"
-    VERSION: str = "1.0.0"
-    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
-    DEBUG: bool = os.getenv("ENVIRONMENT", "development") == "development"
-    
-    # ============================================
-    # BANCO DE DADOS
-    # ============================================
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL", 
-        os.getenv("URL_DO_BANCO_DE_DADOS", "sqlite:///./visto_local.db")
-    )
-    
-    # ============================================
-    # JWT / Segurança
-    # ============================================
-    SECRET_KEY: str = os.getenv(
-        "SECRET_KEY",
-        os.getenv("CHAVE_SECRETA", "sua-chave-secreta-aqui")
-    )
-    
-    ALGORITHM: str = os.getenv(
-        "ALGORITHM",
-        os.getenv("ALGORITMO", "HS256")
-    )
-    
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv(
-        "ACCESS_TOKEN_EXPIRE_MINUTES",
-        os.getenv("MINUTOS_EXPIRACAO_TOKEN", "30")
-    ))
-    
-    # ============================================
-    # STRIPE - PAGAMENTOS
-    # ============================================
-    STRIPE_SECRET_KEY: str = os.getenv(
-        "STRIPE_SECRET_KEY",
-        os.getenv("CHAVE_SECRETA_STRIPE", "")
-    )
-    
-    STRIPE_PUBLISHABLE_KEY: str = os.getenv(
-        "STRIPE_PUBLISHABLE_KEY",
-        os.getenv("CHAVE_PUBLICA_STRIPE", "")
-    )
-    
-    STRIPE_WEBHOOK_SECRET: str = os.getenv(
-        "STRIPE_WEBHOOK_SECRET",
-        os.getenv("SEGREDO_WEBHOOK_STRIPE", "")
-    )
-    
-    STRIPE_PRICE_ID: str = os.getenv(
-        "STRIPE_PRICE_ID",
-        os.getenv("ID_PRECO_STRIPE", "")
-    )
-    
-    PRECO_PREMIUM: int = int(os.getenv(
-        "PRECO_PREMIUM",
-        "7990"
-    ))
-    
-    # ============================================
+class Settings(BaseSettings):
+    APP_NAME: str
+    ENVIRONMENT: str = "development"
+
+    # DB
+    DATABASE_URL: str
+
+    # JWT
+    SECRET_KEY: str
+    ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+
+    # Stripe
+    STRIPE_SECRET_KEY: str
+    STRIPE_PUBLISHABLE_KEY: str
+    STRIPE_WEBHOOK_SECRET: str
+    STRIPE_PRICE_ID: str
+    PRECO_PREMIUM: int
+
     # URLs
-    # ============================================
-    FRONTEND_URL: str = os.getenv(
-        "FRONTEND_URL",
-        os.getenv("URL_FRONTEND", "http://localhost:3000")
-    )
-    
-    BACKEND_URL: str = os.getenv(
-        "BACKEND_URL",
-        os.getenv("URL_DE_ACKEND", "http://localhost:8000")
-    )
-    
-    # ============================================
-    # CORS - Origens permitidas
-    # ============================================
-    ALLOWED_ORIGINS: list = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://aprovavistoamericano.com.br",
-        "https://www.aprovavistoamericano.com.br",
-    ]
+    FRONTEND_URL: str
+    BACKEND_URL: str
+
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
 
 
-# Instância única de configurações
 settings = Settings()
