@@ -9,38 +9,38 @@ export function useAuth() {
 
   const API = process.env.NEXT_PUBLIC_API_URL;
 
-  useEffect(() => {
-    let isMounted = true; // Previne updates após unmount
-    
-    async function load() {
-      try {
-        const res = await fetch(`${API}/usuarios/me`, {
-          credentials: "include",
-        });
-        
-        if (res.ok && isMounted) {
-          const data: User = await res.json();
-          setUser(data);
-        } else if (isMounted) {
-          setUser(null);
-        }
-      } catch (error) {
-        if (isMounted) {
-          setUser(null);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
+  async function load() {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return;
     }
 
+    const res = await fetch(`${API}/usuarios/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (res.ok) {
+      const data: User = await res.json();
+      setUser(data);
+    } else {
+      setUser(null);
+    }
+  } catch (error) {
+    setUser(null);
+  } finally {
+    setLoading(false);
+  }
+}
+
+  useEffect(() => {
     load();
-    
-    return () => {
-      isMounted = false; // Cleanup
-    };
-  }, [API]); // Adiciona API como dependência
+  }, []);
 
   return { user, loading };
 }
