@@ -1,41 +1,182 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+﻿# ============================================
+# APROVA VISTO AMERICANO - .gitignore
+# ============================================
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+# ============================================
+# Python
+# ============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.pyc
+*.so
+.Python
 
-# testing
-/coverage
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# next.js
-/.next/
-/out/
+# ============================================
+# Virtual Environments
+# ============================================
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+pyvenv.cfg
 
-# production
-/build
+# ============================================
+# Environment Variables (CRÍTICO - NUNCA VERSIONAR)
+# ============================================
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
 
-# misc
+# ============================================
+# Database Files (NUNCA VERSIONAR)
+# ============================================
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+visto_americano.db
+local.db
+
+# ============================================
+# IDEs
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.code-workspace
+
+# ============================================
+# OS Files
+# ============================================
 .DS_Store
-*.pem
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
 
-# debug
+# ============================================
+# Logs
+# ============================================
+*.log
+logs/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ============================================
+# Testing
+# ============================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+cover/
+*.cover
+.cache
+nosetests.xml
+coverage.xml
+*.py,cover
+
+# ============================================
+# Jupyter Notebook
+# ============================================
+.ipynb_checkpoints
+*.ipynb
+
+# ============================================
+# mypy
+# ============================================
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ============================================
+# pyenv
+# ============================================
+.python-version
+
+# ============================================
+# Temporary Files
+# ============================================
+*.tmp
+*.bak
+*.swp
+*~.nib
+*.temp
+*.backup
+
+# ============================================
+# Frontend (Node.js / Next.js)
+# ============================================
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+.next/
+out/
+.cache/
 
-# env files (can opt-in for committing if needed)
-.env*
+# ============================================
+# Backup Files
+# ============================================
+*.backup
+backup/
+backups/
 
-# vercel
-.vercel
+# ============================================
+# Secrets e Credenciais (NUNCA VERSIONAR)
+# ============================================
+secrets.json
+credentials.json
+*.pem
+*.key
+*.cert
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# ============================================
+# Arquivos de Estrutura (temporários)
+# ============================================
+estrutura.txt
+ESTRUTURA_PROJETO.txt
+
+# ============================================
+# Build scripts output
+# ============================================
+*.sh.log
