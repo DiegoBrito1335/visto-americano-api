@@ -15,13 +15,10 @@ router = APIRouter(
     tags=["Autenticação"]
 )
 
-# ==========================================
-# OPTIONS FIX — evita CORS 400
-# ==========================================
+# OPTIONS fix — evita erro 400 no preflight
 @router.options("/login")
 def options_login():
     return Response(status_code=200)
-
 
 @router.post("/login")
 def login(data: LoginSchema, response: Response, db: Session = Depends(get_db)):
@@ -35,12 +32,14 @@ def login(data: LoginSchema, response: Response, db: Session = Depends(get_db)):
 
     is_prod = settings.ENVIRONMENT == "production"
 
+    # Cookies cross-site (Vercel → Railway)
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
         secure=is_prod,
-        samesite="None" if is_prod else "Lax"
+        samesite="None" if is_prod else "Lax",
+        path="/"
     )
 
     response.set_cookie(
@@ -48,7 +47,8 @@ def login(data: LoginSchema, response: Response, db: Session = Depends(get_db)):
         value=refresh_token,
         httponly=True,
         secure=is_prod,
-        samesite="None" if is_prod else "Lax"
+        samesite="None" if is_prod else "Lax",
+        path="/"
     )
 
     return {
