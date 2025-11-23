@@ -1,61 +1,79 @@
-def build_cors_list():
-    """
-    Monta dinamicamente a lista de origens permitidas.
-    Suporta:
-    - URL principal do FRONTEND (produção)
-    - URL adicional (preview do Vercel)
-    - versões com/sem www
-    - versões http/https
-    """
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.core.config import settings
+from app.routers import auth, tentativas, usuarios, perguntas, pagamentos, pdf
+from app.database import init_db
 
+
+def build_cors_list():
     origins = set()
 
-    # ================================
-    # ORIGEM PRINCIPAL DO FRONTEND
-    # ================================
+    # ORIGEM PRINCIPAL
     if settings.FRONTEND_URL:
         origins.add(settings.FRONTEND_URL.strip())
 
-    # ================================
-    # ORIGEM ADICIONAL (PREVIEW VERCEL)
-    # ================================
+    # ORIGEM ADICIONAL (Railway/Vercel)
     if hasattr(settings, "CORS_ADDITIONAL_ORIGIN") and settings.CORS_ADDITIONAL_ORIGIN:
         origins.add(settings.CORS_ADDITIONAL_ORIGIN.strip())
 
-    # ================================
-    # Gerar variações com/sem www e http/https
-    # ================================
+    # WWW e sem www + HTTP/HTTPS
     generated = set()
-
     for origin in origins:
-        if origin.startswith("https://"):
-            generated.add(origin.replace("https://", "http://"))
-        if origin.startswith("http://"):
-            generated.add(origin.replace("http://", "https://"))
+        base = origin.replace("https://", "").replace("http://", "")
 
-        # adicionar versão www
-        if "://www." not in origin:
-            generated.add(origin.replace("://", "://www."))
-        # versão sem www
-        if "://www." in origin:
-            generated.add(origin.replace("://www.", "://"))
+        generated.add(f"https://{base}")
+        generated.add(f"http://{base}")
+        generated.add(f"https://www.{base}")
+        generated.add(f"http://www.{base}")
 
-    origins = origins.union(generated)
+    # Adiciona ao set final
+    origins.update(generated)
 
-    # ================================
-    # URLs usadas em desenvolvimento
-    # ================================
-    dev_allowed = [
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-    ]
-    origins.update(dev_allowed)
+    # Desenvolvimento
+    origins.add("http://localhost:3000")
+    origins.add("http://localhost:3001")
+    origins.add("http://127.0.0.1:3000")
 
-    # ================================
-    # Ambiente de dev pode permitir tudo
-    # ================================
-    if settings.ENVIRONMENT == "development":
-        origins.add("*")
+    # Preview Vercel
+    origins.add("https://visto-americano-kvsqp896m-diego-santos-de-brito-s-projects.vercel.app")
 
     return list(origins)
+
+
+def create_app():
+    app = FastAPI(title=settings.APP_NAME)
+
+    @app.on_event("startup")
+    def startup_event():
+        init_db()
+
+    allowed_origins = build_cors_list()
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    app.include_router(auth.router)
+    app.include_router(usuarios.router)
+    app.include_router(perguntas.router)
+    app.include_router(tentativas.router)
+    app.include_router(pagamentos.router)
+    app.include_router(pdf.router)
+
+    @app.get("/")
+    def root():
+        return {
+            "status": "online",
+            "environment": settings.ENVIRONMENT,
+            "allowed_origins": allowed_origins,
+        }
+
+    return app
+
+
+app = create_app()
+
