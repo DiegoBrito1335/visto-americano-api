@@ -47,6 +47,7 @@ pyvenv.cfg
 # ============================================
 # Environment Variables (CRÍTICO - NUNCA VERSIONAR)
 # ============================================
+.env
 .env.local
 .env.*.local
 .env.production
