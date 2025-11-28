@@ -11,7 +11,7 @@ from app.api.router import api_router
 
 
 # ----------------------------------------
-# SENTRY
+# SENTRY (MANTIDO)
 # ----------------------------------------
 sentry_sdk.init(
     dsn=settings.SENTRY_DSN,
@@ -32,11 +32,11 @@ async def lifespan(app: FastAPI):
 
 
 # ----------------------------------------
-# APP FASTAPI
+# APP
 # ----------------------------------------
 app = FastAPI(
-    title="TryLux.AI API",
-    description="Provador Virtual Inteligente baseado em IA.",
+    title="Visto Americano API",
+    description="Backend oficial do sistema Visto Americano.",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -45,15 +45,14 @@ app = FastAPI(
 
 
 # ----------------------------------------
-# CORS DEFINITIVO
+# CORS – APENAS PARA O PROJETO **VISTO AMERICANO**
 # ----------------------------------------
 allowed_origins = [
     "https://www.aprovistoamericano.com.br",
     "https://aprovistoamericano.com.br",
-    "https://visto-americano-front.vercel.app",
     "https://visto-americano.vercel.app",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
+    "http://localhost:3000",       # frontend local do Visto Americano
+    "http://127.0.0.1:3000"
 ]
 
 app.add_middleware(
@@ -74,7 +73,7 @@ app.include_router(api_router, prefix="/api/v1")
 @app.get("/", tags=["system"])
 async def root():
     return {
-        "message": "TryLux.AI Backend Running",
+        "message": "Visto Americano API Running",
         "version": "1.0.0",
         "docs": "/docs",
         "api_prefix": "/api/v1",
@@ -86,6 +85,5 @@ async def root():
 async def health_check():
     return {
         "status": "healthy",
-        "database": "connected",
-        "redis": "connected"
+        "database": "connected"
     }

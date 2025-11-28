@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-
+from pydantic import Field
 
 class Settings(BaseSettings):
     APP_NAME: str
@@ -13,12 +13,14 @@ class Settings(BaseSettings):
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
 
-    PRECO_PREMIUM: int
+    PRECO_PREMIUM: float = Field(..., description="Preço do plano premium")
 
     STRIPE_SECRET_KEY: str
     STRIPE_PUBLISHABLE_KEY: str
     STRIPE_WEBHOOK_SECRET: str
     STRIPE_PRICE_ID: str
+
+    SENTRY_DSN: str | None = None  # evita erro caso vazio
 
     class Config:
         env_file = ".env"
