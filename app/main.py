@@ -45,7 +45,7 @@ app = FastAPI(
 
 
 # ----------------------------------------
-# CORS FIXED (CORREÇÃO DEFINITIVA)
+# CORS DEFINITIVO
 # ----------------------------------------
 allowed_origins = [
     "https://www.aprovistoamericano.com.br",
@@ -89,5 +89,3 @@ async def health_check():
         "database": "connected",
         "redis": "connected"
     }
-
-
